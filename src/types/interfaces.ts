@@ -81,3 +81,11 @@ export interface ICacheRow {
   expires: number;
   data: string;
 }
+// interface IHistoryRow {
+//   date: string;
+//   average: number;
+//   highest: number;
+//   lowest: number;
+//   order_count: number;
+//   volume: number;
+// }

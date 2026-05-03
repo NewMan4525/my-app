@@ -1,110 +1,151 @@
-import { setKey, getByKey } from "@/src/lib/dbHandlers";
+import { BASE_URL } from "@/src/lib/constants";
+import { IHistory } from "../types/interfaces";
+import { getByKey, setKey } from "./dbHandlers";
+
+// Состояние вынесено в объект-синглтон
+const EsiShield = {
+  errorLimitRemain: 100,
+  coolDownUntil: 0,
+
+  canRequest(): boolean {
+    return Date.now() > this.coolDownUntil && this.errorLimitRemain > 10;
+  },
+
+  update(headers: Headers, status: number) {
+    const remain = headers.get("x-esi-error-limit-remain");
+    if (remain) this.errorLimitRemain = parseInt(remain, 10);
+
+    // Если 420 или лимит исчерпан — блокируем всё на 1 минуту
+    if (status === 420 || this.errorLimitRemain <= 1) {
+      this.coolDownUntil = Date.now() + 60000;
+    }
+  },
+};
+
+async function fetchSingle<T>(url: string): Promise<T | null> {
+  // 1. БД: Проверка кеша (Expires и 404)
+  const cached = getByKey(url);
+  if (cached) {
+    if (cached.etag === "404-block" && Date.now() < cached.expires) return null;
+    if (Date.now() < cached.expires) return JSON.parse(cached.data);
+  }
+
+  // 2. Shield: Можно ли идти в сеть?
+  if (!EsiShield.canRequest()) {
+    return cached ? JSON.parse(cached.data) : null;
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: { "If-None-Match": cached?.etag ?? "" },
+    });
+
+    EsiShield.update(response.headers, response.status);
+
+    // 3. Обработка ответов
+    if (response.status === 304 && cached) {
+      const newExpires = new Date(
+        response.headers.get("expires") || 0,
+      ).getTime();
+      setKey({ ...cached, expires: newExpires });
+      return JSON.parse(cached.data);
+    }
+
+    if (response.status === 200) {
+      const data = await response.json();
+      setKey({
+        key: url,
+        etag: response.headers.get("etag") ?? "",
+        expires: new Date(response.headers.get("expires") || 0).getTime(),
+        data: JSON.stringify(data),
+      });
+      return data;
+    }
+
+    if (response.status === 404) {
+      setKey({
+        key: url,
+        etag: "404-block",
+        expires: Date.now() + 86400000,
+        data: "",
+      });
+    }
+
+    return null;
+  } catch (error) {
+    console.error(error);
+    return cached ? JSON.parse(cached.data) : null;
+  }
+}
 import pLimit from "p-limit";
 
-export async function queryHandler(urls: string[], key: string) {
+export async function queryHandler<T>(urls: string[]) {
+  // Лимит одновременных запросов (ESI рекомендует до 20-50)
   const limit = pLimit(20);
-  // Глобальные переменные для защиты от бана
-  let errorLimitRemain: number = 100;
-  let isCoolingDown: boolean = false;
 
-  async function f<T>(url: string): Promise<T | null> {
-    if (isCoolingDown) return null;
+  const tasks = urls.map((url) => {
+    return limit(() => fetchSingle<T>(url));
+  });
 
-    const cached = getByKey(key);
+  const results = await Promise.all(tasks);
 
-    // 1. Проверка локального времени истечения (Expires)
-    if (cached && Date.now() < cached.expires) {
-      return JSON.parse(cached.data) as T;
+  // Убираем null значения (ошибки или заблокированные 404)
+  return results.filter(
+    (item): item is NonNullable<typeof item> => item !== null,
+  );
+}
+
+export async function getItemsHistory(
+  items: { type_id: number }[],
+  regionId: number,
+): Promise<IHistory[][]> {
+  // 1. Формируем URL
+  const urls = items.map(
+    (item) =>
+      `${BASE_URL}latest/markets/${regionId}/history/?datasource=tranquility&type_id=${item.type_id}`,
+  );
+
+  // 2. Запрашиваем данные.
+  // queryHandler возвращает (IHistory[] | null)[]
+  const historyData = await queryHandler<IHistory[]>(urls);
+
+  // 3. Возвращаем только историю, гарантируя, что это массив массивов
+  // (заменяем null на пустые массивы, если запрос не удался)
+  return historyData.map((data) => data || []);
+}
+export async function getItemsInfo(items: { type_id: number }[]) {
+  if (!items || items.length === 0) return [];
+
+  const url = "https://esi.evetech.net/universe/names";
+
+  // Извлекаем только ID и превращаем в массив строк/чисел
+  const ids = items.map((item) => item.type_id);
+
+  const options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Compatibility-Date": "2025-12-16",
+    },
+    // 💡 Обязательно JSON.stringify и передаем чистый массив ID
+    body: JSON.stringify(ids),
+  };
+
+  try {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`ESI Error: ${response.status}`, errorText);
+      return [];
     }
 
-    // 2. Защита: если лимит ошибок ESI почти исчерпан
-    if (errorLimitRemain < 10) {
-      console.warn(
-        `[ESI] Низкий лимит ошибок: ${errorLimitRemain}. Ожидание 60с...`,
-      );
-      isCoolingDown = true;
-      await new Promise((r) => setTimeout(r, 60000));
-      isCoolingDown = false;
-      errorLimitRemain = 100;
-    }
+    const data = await response.json();
 
-    try {
-      const response = await fetch(url, {
-        headers: { "If-None-Match": cached?.etag ?? "" },
-      });
-
-      // Обновляем счетчик ошибок из заголовков ESI
-      const remain = response.headers.get("x-esi-error-limit-remain");
-      if (remain) errorLimitRemain = parseInt(remain, 10);
-
-      // 3. Статус 304: Данные не изменились
-      if (response.status === 304 && cached) {
-        const expiresHeader: string | null = response.headers.get("expires");
-        const newExpires: number = expiresHeader
-          ? new Date(expiresHeader).getTime()
-          : Date.now() + 300000;
-        const dataParsed = JSON.parse(cached.data);
-
-        setKey({
-          key,
-          etag: cached.etag,
-          expires: newExpires,
-          data: dataParsed,
-        });
-
-        return dataParsed as T;
-      }
-
-      // 4. Статус 200: Получены новые данные
-      if (response.status === 200) {
-        const newData = (await response.json()) as unknown;
-
-        const expiresHeader = response.headers.get("expires");
-        const expiresMs = expiresHeader
-          ? new Date(expiresHeader).getTime()
-          : Date.now();
-
-        setKey({
-          key: key, // Ключ у вас уже есть как string
-
-          // ИСПОЛЬЗУЙТЕ ?? "", чтобы заменить null на пустую строку
-          etag: response.headers.get("etag") ?? "",
-
-          expires: expiresMs,
-
-          // Убедитесь, что здесь string (через stringify)
-          data: JSON.stringify(newData),
-        });
-        return newData as T;
-      }
-
-      // 5. Обработка 404 (объект удален/не существует)
-      if (response.status === 404) {
-        // Кешируем 404 на 24 часа, чтобы не спамить ESI невалидным ID
-        const tomorrow = new Date(Date.now() + 86400000).getTime();
-        setKey({
-          key: url,
-          etag: "null",
-          expires: tomorrow,
-          data: "error: Not Found",
-        });
-        return null;
-      }
-      return null;
-    } catch (error: unknown) {
-      console.error(`[ESI] Ошибка сети для ${url}:`, error);
-      return cached ? (JSON.parse(cached.data) as T) : null;
-    }
+    return data;
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return [];
   }
-
-  async function fetchController<T>(urls: string[]): Promise<(T | null)[]> {
-    const tasks = urls.map((url) =>
-      limit(async () => {
-        const result = await f<T>(url);
-        return result;
-      }),
-    );
-    return await Promise.all(tasks);
-  }
-  return await fetchController(urls);
 }
