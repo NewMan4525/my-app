@@ -1,15 +1,9 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import { ICacheData } from "@/src/types/interfaces";
 
 const dbPath = path.join(process.cwd(), "./src/db/esi_cache.db");
-
-interface ICacheData {
-  key: string;
-  etag: string;
-  expires: number;
-  data: string;
-}
 
 /**
  * Инициализация базы данных и создание таблицы
@@ -106,4 +100,3 @@ export const dropDb = (): void => {
   });
   console.log("db droped");
 };
-//Market Orders: 5 минут (региональные ордера).

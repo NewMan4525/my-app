@@ -1,6 +1,5 @@
-import { BASE_URL } from "@/src/lib/constants";
-import { IHistory } from "../types/interfaces";
 import { getByKey, setKey } from "./dbHandlers";
+import pLimit from "p-limit";
 
 // Состояние вынесено в объект-синглтон
 const EsiShield = {
@@ -77,7 +76,6 @@ async function fetchSingle<T>(url: string): Promise<T | null> {
     return cached ? JSON.parse(cached.data) : null;
   }
 }
-import pLimit from "p-limit";
 
 export async function queryHandler<T>(urls: string[]) {
   // Лимит одновременных запросов (ESI рекомендует до 20-50)
@@ -93,59 +91,4 @@ export async function queryHandler<T>(urls: string[]) {
   return results.filter(
     (item): item is NonNullable<typeof item> => item !== null,
   );
-}
-
-export async function getItemsHistory(
-  items: { type_id: number }[],
-  regionId: number,
-): Promise<IHistory[][]> {
-  // 1. Формируем URL
-  const urls = items.map(
-    (item) =>
-      `${BASE_URL}latest/markets/${regionId}/history/?datasource=tranquility&type_id=${item.type_id}`,
-  );
-
-  // 2. Запрашиваем данные.
-  // queryHandler возвращает (IHistory[] | null)[]
-  const historyData = await queryHandler<IHistory[]>(urls);
-
-  // 3. Возвращаем только историю, гарантируя, что это массив массивов
-  // (заменяем null на пустые массивы, если запрос не удался)
-  return historyData.map((data) => data || []);
-}
-export async function getItemsInfo(items: { type_id: number }[]) {
-  if (!items || items.length === 0) return [];
-
-  const url = "https://esi.evetech.net/universe/names";
-
-  // Извлекаем только ID и превращаем в массив строк/чисел
-  const ids = items.map((item) => item.type_id);
-
-  const options = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-Compatibility-Date": "2025-12-16",
-    },
-    // 💡 Обязательно JSON.stringify и передаем чистый массив ID
-    body: JSON.stringify(ids),
-  };
-
-  try {
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`ESI Error: ${response.status}`, errorText);
-      return [];
-    }
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return [];
-  }
 }

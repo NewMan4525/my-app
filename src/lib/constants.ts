@@ -1,11 +1,4 @@
-import { INumObj, IHub } from "@/src/types/interfaces";
-export const REGIONS: INumObj = {
-  "The Forge": 10000002,
-  Domain: 10000043,
-  "Sinq Laison": 10000032,
-  Metropolis: 10000042,
-  Heimatar: 10000030,
-};
+import { IHub, ITIME } from "@/src/types/interfaces";
 
 export const HUBS: IHub = {
   the_forge: {
@@ -52,7 +45,7 @@ export const HUBS: IHub = {
 
 export const BASE_URL: string = `https://esi.evetech.net/`;
 // Milliseconds for common time periods
-export const TIME: INumObj = {
+export const TIME: ITIME = {
   quartal: 7776000000,
   month: 2592000000,
   week: 604800000,

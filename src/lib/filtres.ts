@@ -1,9 +1,9 @@
-import { settings } from "./settings";
+import { tradeSettings } from "./tradeSettings";
 import { INumObj } from "@/src/types/interfaces";
 
 export function priceFilter(items: (INumObj | null)[]): INumObj[] {
-  const min = settings.priceMin;
-  const max = settings.priceMax;
+  const min = tradeSettings.priceMin;
+  const max = tradeSettings.priceMax;
   return items.filter((item): item is INumObj => {
     if (item === null) return false;
     const meetsMin = item.buy >= (min ?? 0);
@@ -14,8 +14,8 @@ export function priceFilter(items: (INumObj | null)[]): INumObj[] {
 }
 
 export function marginFilter(items: (INumObj | null)[]): INumObj[] {
-  const min = settings.marginMin;
-  const max = settings.marginMax;
+  const min = tradeSettings.marginMin;
+  const max = tradeSettings.marginMax;
   return items.filter((item): item is INumObj => {
     if (item === null || item.margin === Infinity) return false;
     const meetsMin = item.margin >= min;
@@ -25,8 +25,8 @@ export function marginFilter(items: (INumObj | null)[]): INumObj[] {
 }
 
 export function volFilter(items: (INumObj | null)[]): INumObj[] {
-  const min = settings.volumeMin;
-  const max = settings.volumeMax;
+  const min = tradeSettings.volumeMin;
+  const max = tradeSettings.volumeMax;
 
   return items.filter((item): item is INumObj => {
     // Проверяем на null и исключаем товары с нулевым или отсутствующим vol
@@ -42,8 +42,8 @@ export function volFilter(items: (INumObj | null)[]): INumObj[] {
 }
 
 export function ordersFilter(items: INumObj[]): INumObj[] {
-  const min = settings.ordersMin;
-  const max = settings.ordersMax;
+  const min = tradeSettings.ordersMin;
+  const max = tradeSettings.ordersMax;
 
   return items.filter((item) => {
     // Если min не задан, считаем его равным 0
@@ -57,8 +57,8 @@ export function ordersFilter(items: INumObj[]): INumObj[] {
 }
 
 export function finalProfitFilter(items: INumObj[]): INumObj[] {
-  const tax = settings.TAX;
-  const fees = settings.FEES;
+  const tax = tradeSettings.TAX;
+  const fees = tradeSettings.FEES;
 
   return items.filter((item) => {
     // Считаем реальные затраты и реальную выручку

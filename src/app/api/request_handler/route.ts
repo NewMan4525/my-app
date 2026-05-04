@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeGetData } from "@/src/lib/execute";
-import { settings } from "@/src/lib/settings";
+import { tradeSettings } from "@/src/lib/tradeSettings";
 /**
  * Обрабатывает POST-запросы на данный Route Handler.
  * @param request Объект NextRequest, содержащий данные запроса.
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     // доступны через request.formData().
     const formData = await request.formData();
     const region = formData.get("region")?.toString() || "";
-    settings.region = region;
+    tradeSettings.region = region;
     executeGetData();
     return NextResponse.json({ message: "Result:", region }, { status: 200 });
   } catch (error) {

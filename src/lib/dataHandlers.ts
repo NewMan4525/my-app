@@ -1,6 +1,6 @@
 import { TIME } from "@/src/lib/constants";
-import { settings } from "@/src/lib/settings";
-import { IOrder, INumObj, IHistory } from "@/src/types/interfaces";
+import { tradeSettings } from "@/src/lib/tradeSettings";
+import { IOrder, INumObj, IHistory, IInfo } from "@/src/types/interfaces";
 
 export function getItemIds(orders: IOrder[]): number[] {
   const ids = orders.map((item) => item.type_id);
@@ -57,9 +57,17 @@ export function ordersHandler(orders: IOrder[]): (INumObj | null)[] {
   try {
     const itemIds: number[] = getItemIds(orders);
 
-    const itemsWithOrders = addOrdersToId(itemIds, orders);
+    const itemsWithOrders: {
+      type_id: number;
+      orders: IOrder[];
+    }[] = addOrdersToId(itemIds, orders);
 
-    const result = itemOrdersHandler(itemsWithOrders);
+    const result: ({
+      type_id: number;
+      buy: number;
+      sell: number;
+      margin: number;
+    } | null)[] = itemOrdersHandler(itemsWithOrders);
 
     return result;
   } catch (error) {
@@ -73,7 +81,7 @@ export function addHistoryToItems(
   history: IHistory[][],
 ): INumObj[] {
   try {
-    const dateLimit = Date.now() - TIME[settings.time];
+    const dateLimit: number = Date.now() - TIME[tradeSettings.time];
 
     return items.map((item, i) => {
       const itemHistory = history[i] || [];
@@ -107,7 +115,7 @@ export function addHistoryToItems(
 
 export function addInfoToItem(
   items: INumObj[],
-  info: { [key: string]: string | number }[],
+  info: IInfo[],
 ): { [key: string]: string | number }[] {
   try {
     return items.map((item, i) => ({
