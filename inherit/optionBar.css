@@ -1,0 +1,200 @@
+#option_bar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 15px;
+  background: var(--bg-secondary);
+  z-index: 1;
+  position: relative;
+  animation: slideToBottom 0.3s ease-in-out forwards;
+  position: absolute;
+}
+
+#option_bar.option-bar_hidden {
+  animation: slideToTop 0.3s ease-in-out forwards;
+}
+
+@keyframes slideToTop {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-535px);
+  }
+}
+@keyframes slideToBottom {
+  from {
+    transform: translateY(-535px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.option-block h6 {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 11px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--inactive);
+}
+
+/* Сетка для ползунков */
+
+.selector_wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+/* input type radio */
+.radio-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+.card {
+  margin: 5px;
+}
+.card input {
+  display: none;
+}
+
+.card-name {
+  padding: 6px 12px;
+  /* background: var(--bg-secondary); */
+  border: 1px solid var(--inactive);
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+}
+.card-name:hover {
+  border-color: var(--hover-text);
+  color: var(--hover-text);
+}
+
+.card input:checked + .card-name {
+  /* background: var(--secondary); */
+  border-color: var(--active);
+  color: var(--text-primary);
+}
+
+/* input type range */
+
+.label-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.range-num-input {
+  width: 80px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--inactive);
+  color: var(--active);
+  text-align: right;
+  padding: 2px 5px;
+  font-family: monospace;
+  border-radius: 3px;
+}
+
+.range-num-input::-webkit-inner-spin-button {
+  display: none;
+}
+
+.control-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-btn {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: none;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.step-btn:hover {
+  color: var(--hover-text);
+}
+
+input[type="range"] {
+  -webkit-appearance: none; /* Сброс для Chrome/Safari */
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 1. Дорожка (Track) */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--inactive);
+  border-radius: 3px;
+  /* border: 1px solid #30363d; */
+}
+
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--inactive);
+  border-radius: 3px;
+}
+
+/* 2. Бегунок (Thumb) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 3px;
+  background: var(--active);
+  border-radius: 2px;
+  margin-top: -8px; /* Центрирование: (высота_track/2) - (высота_thumb/2) */
+  box-shadow: 0 0 10px var(--active);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+  height: 18px;
+  width: 3px;
+  background: var(--active);
+  border: none;
+  border-radius: 2px;
+}
+
+/* 3. Эффекты при взаимодействии */
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scaleY(1.2);
+  background: var(--hover-text);
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scaleY(0.9);
+}
+.label-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.range-value {
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+.current-oprions-wrapper {
+  display: flex;
+  justify-content: space-between;
+}
+.options_bar {
+  width: 50%;
+  display: flex;
+  justify-content: space-around;
+}

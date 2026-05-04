@@ -1,0 +1,42 @@
+#header {
+  padding-top: 10px;
+}
+
+.container {
+  background-color: var(--bg-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  position: relative;
+  z-index: 2;
+}
+
+#header_version_wrapper,
+#header_options_wrapper {
+  display: flex;
+  height: 100%;
+  gap: 10px;
+}
+
+#header_version_wrapper > span {
+  display: block;
+  top: 0;
+}
+/* #header_options_wrapper > div {
+  display: block;
+} */
+#page_header {
+  color: var(--text-primary);
+  font-size: 32px;
+}
+#nav {
+  width: 50%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.someClasslist {
+  cursor: default;
+  opacity: 0;
+}

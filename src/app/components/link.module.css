@@ -1,0 +1,3 @@
+.link_wrapper:hover {
+  color: var(--hover-text);
+}

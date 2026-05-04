@@ -1,8 +1,16 @@
-export default function Header() {
+import styles from "./home.module.css";
+
+export default function Home() {
   return (
-    <form action="http://localhost:3000/api/request_handler" method="POST">
-      <input type="hidden" name="region" value="heimatar" />
-      <button type="submit">send region</button>
-    </form>
+    <section>
+      <div className={`${styles.container} container`}>
+        <div className={styles.input_stat_block}>
+          <h3 className={styles.input_stat_header}>Caldari</h3>
+          <div className={styles.description_input_wrapper}>
+            <p>Caldari state to you</p> <input type="number" />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

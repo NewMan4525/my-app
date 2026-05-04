@@ -1,0 +1,151 @@
+/* Уменьшаем общие отступы контейнера */
+#data_table {
+  /* width: fit-content; Таблица не растягивается на весь экран, если контента мало */
+  max-width: 100%;
+  margin: 10px auto; /* Центрируем */
+  /* animation: slideToBottom 0.3s ease-in-out forwards; */
+  position: relative;
+  top: 40px;
+  z-index: 0;
+}
+/* #data_table.data_table_uplifted {
+  animation: slideToTop 0.3s ease-in-out forwards;
+} */
+
+/* @keyframes slideToTop {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-535px);
+  }
+}
+@keyframes slideToBottom {
+  from {
+    transform: translateY(-535px);
+  }
+  to {
+    transform: translateY(0);
+  }
+} */
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px; /* Оптимальный размер */
+  white-space: nowrap; /* Запрещаем перенос строк, чтобы колонки были узкими */
+  color: var(--text-primary);
+}
+
+/* Сжимаем шапку */
+.market-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  padding: 2px 5px; /* Уменьшили с 12px 15px */
+  font-size: 14px;
+  border-bottom: 2px solid var(--inactive);
+  z-index: 10;
+}
+
+/* Сжимаем ячейки с данными */
+.market-table td {
+  padding: 4px 8px; /* Уменьшили вертикальный и горизонтальный отступы */
+  border-bottom: 1px solid var(--inactive);
+  line-height: 1.2;
+}
+
+/* Ограничиваем колонку с названием, чтобы она не раздувала таблицу */
+.market-table td:last-child {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Три точки, если название слишком длинное */
+}
+
+/* Компактный контент внутри ячеек с кнопками */
+.cell-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Цифры прижимаем к правому краю */
+  gap: 4px;
+  min-width: 0; /* Убираем min-width: 100px, который растягивал колонки */
+}
+
+/* Название предмета выравниваем по левому краю */
+td:nth-child(5) .cell-content {
+  justify-content: flex-start;
+}
+
+/* Миниатюрные кнопки */
+.copy-btn {
+  font-size: 11px; /* Уменьшили иконки */
+  padding: 0px 2px;
+  opacity: 0.5;
+}
+.copy-btn:hover {
+  opacity: 1;
+}
+
+/* Убираем лишние отступы для иконок сортировки */
+.sort-icon {
+  margin-left: 2px;
+  font-size: 9px;
+  color: var(--inactive);
+}
+
+/* Делаем скроллбар тоньше (для Chrome/Edge) */
+.table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--inactive);
+  border-radius: 10px;
+}
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.copy-btn.copied {
+  color: #00ff88;
+  transform: scale(1.2);
+}
+.sortable:hover {
+  color: var(--hover-text);
+}
+.positive {
+  /* color: #00ff88; */
+  color: var(--positive);
+}
+.negative {
+  color: var(--negative);
+}
+.market-table tbody tr:hover {
+  background: var(--hover-element); /* Легкий синий отсвет */
+}
+.market-table tbody :target {
+  background: var(--hover-text); /* Легкий синий отсвет */
+}
+.market-table td {
+  font-variant-numeric: tabular-nums; /* Чтобы цифры не прыгали */
+}
+/* Липкая шапка */
+.market-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--inactive);
+  z-index: 10;
+}
+
+.table-container {
+  overflow-x: auto; /* Для мобилок */
+  max-height: 85dvh;
+  overflow-y: auto;
+}
+tr.is-selected {
+  background-color: #2a4457 !important; /* Цвет в стиле EVE Online */
+  color: #fff;
+  outline: 1px solid #4a90e2;
+}
