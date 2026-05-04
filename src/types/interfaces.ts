@@ -16,10 +16,11 @@ export type JSONValue =
 export interface IHub {
   [key: string]: {
     region: { alias: string; name: string; id: number };
-    system: { name: string; id: number };
+    system: { name: string; id: number; owner: string };
     station: {
       name: string;
       id: number;
+      owner: string;
     };
   };
 }
