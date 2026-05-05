@@ -1,0 +1,11 @@
+.flex_box {
+  width: 50%;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 10%;
+}
+.description_input_wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

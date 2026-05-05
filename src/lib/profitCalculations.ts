@@ -1,4 +1,4 @@
-import { tradeSettings } from "./tradeSettings";
+import { tradeSettings } from "./settings";
 import { INumObj } from "@/src/types/interfaces";
 
 export function profitCalc(items: INumObj[]): INumObj[] {

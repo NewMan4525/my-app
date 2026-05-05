@@ -1,6 +1,6 @@
 import { urlsConstructor } from "@/src/lib/urlConstructors";
 import { HUBS } from "@/src/lib/constants";
-import { tradeSettings } from "@/src/lib/tradeSettings";
+import { tradeSettings } from "@/src/lib/settings";
 import { IHistory, IOrder, IInfo } from "../types/interfaces";
 import { getNeighborSystems, jumpFilter } from "./location";
 import {

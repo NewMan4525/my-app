@@ -1,0 +1,22 @@
+.container {
+  padding-top: 10px;
+}
+
+.h2 {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.input_stat_block {
+  padding: 0 15%;
+}
+.input_stat_header {
+}
+.description_input_wrapper > * {
+  display: block;
+}
+.description_input_wrapper {
+  display: flex;
+  justify-content: space-between;
+}

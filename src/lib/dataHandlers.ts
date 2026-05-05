@@ -1,5 +1,5 @@
 import { TIME } from "@/src/lib/constants";
-import { tradeSettings } from "@/src/lib/tradeSettings";
+import { tradeSettings } from "@/src/lib/settings";
 import { IOrder, INumObj, IHistory, IInfo } from "@/src/types/interfaces";
 
 export function getItemIds(orders: IOrder[]): number[] {

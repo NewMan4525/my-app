@@ -4,15 +4,12 @@ import Link from "../components/link";
 import Button from "../components/button";
 export default function Header() {
   const links = [
-    { href: "/", text: "User" },
-    { href: "#", text: "Buy" },
-    { href: "#", text: "Sell" },
-    { href: "#", text: "0.01 isk war" },
+    { href: "user", text: "User" },
+    { href: "buy", text: "Buy" },
+    { href: "sell", text: "Sell" },
+    { href: "war", text: "0.01 isk war" },
   ];
-  const btns = [
-    { value: "#", text: "Option" },
-    { value: "#", text: "Theme" },
-  ];
+  const btns = [{ value: "#", text: "Theme" }];
 
   return (
     <header id={styles.header}>

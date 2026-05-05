@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeGetData } from "@/src/lib/execute";
-import { tradeSettings } from "@/src/lib/tradeSettings";
+import { tradeSettings } from "@/src/lib/settings";
 /**
  * Обрабатывает POST-запросы на данный Route Handler.
  * @param request Объект NextRequest, содержащий данные запроса.

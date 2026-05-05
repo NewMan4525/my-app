@@ -14,15 +14,25 @@ export type JSONValue =
   | JSONValue[];
 
 export interface IHub {
-  [key: string]: {
-    region: { alias: string; name: string; id: number };
-    system: { name: string; id: number; owner: string };
-    station: {
+  region: { alias: string; name: string; id: number };
+  system: { name: string; id: number };
+  station: {
+    name: string;
+    id: number;
+  };
+  owners: {
+    corporation: {
+      alias: string;
       name: string;
-      id: number;
-      owner: string;
+    };
+    faction: {
+      alias: string;
+      name: string;
     };
   };
+}
+export interface IHubs {
+  [key: string]: IHub;
 }
 export interface ITIME {
   [key: string]: number;
@@ -45,24 +55,8 @@ export interface ITradeSettings {
 }
 
 export interface IUserStats {
-  the_forge: {
-    factionStans: number;
-    stationOwnerStand: number;
-  };
-  domain: {
-    factionStans: number;
-    stationOwnerStand: number;
-  };
-  sinq_laison: {
-    factionStans: number;
-    stationOwnerStand: number;
-  };
-  metropolis: {
-    factionStans: number;
-    stationOwnerStand: number;
-  };
-  heimatar: {
-    factionStans: number;
+  [key: string]: {
+    factionStand: number;
     stationOwnerStand: number;
   };
 }
