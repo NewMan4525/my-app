@@ -1,0 +1,23 @@
+.input_block {
+    margin-bottom: 25px;
+}
+
+.input_block_header {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 16px;
+    margin-bottom: 1%;
+    padding-top: 1%;
+    border-top: 1px solid var(--inactive);
+}
+
+.inputs_flex {
+    display: flex;
+    justify-content: space-evenly;
+}
+.inputs_flexbox {
+    width: 50%;
+    display: flex;
+    justify-content: flex-end;
+    /* padding-right: 10%; */
+}

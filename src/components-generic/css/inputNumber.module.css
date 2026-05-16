@@ -1,0 +1,12 @@
+.input_container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.labelInputNumber {
+    text-align: center;
+}
+.inputNumber {
+    margin: 1%;
+}
