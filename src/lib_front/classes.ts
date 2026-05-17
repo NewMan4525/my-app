@@ -1,4 +1,4 @@
-import { IInputProps } from '@/src/types/FrontInterfaces';
+import { IInputProps } from '@/src/types/frontInterfaces';
 
 interface IOption {
     groupName?: string;

@@ -6,10 +6,12 @@ interface Props {
         labelText: string;
         inputName: string;
         alias: string;
-        defaultValue?: number;
     };
+    value: number; // Передаем текущее значение из стейта страницы
+    onChange: (name: string, value: number) => void; // Колбэк для изменения
 }
-export default function InputNumber({ options }: Props) {
+
+export default function InputNumber({ options, value, onChange }: Props) {
     return (
         <div className={styles.input_container}>
             <label className={styles.labelInputNumber} htmlFor={options.alias}>
@@ -20,7 +22,10 @@ export default function InputNumber({ options }: Props) {
                     placeholder="0"
                     type="number"
                     name={options.inputName}
-                    defaultValue={options.defaultValue}
+                    value={value} // Меняем defaultValue на value
+                    onChange={(e) =>
+                        onChange(options.inputName, Number(e.target.value))
+                    }
                 />
             </label>
         </div>

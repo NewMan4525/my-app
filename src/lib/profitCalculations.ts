@@ -1,35 +1,42 @@
-import { tradeSettings } from "./settings";
-import { INumObj } from "@/src/types/interfaces";
+// src/lib/profitCalculations.ts
+import { INumObj, ITradeSettings } from '@/src/types/interfaces';
 
-export function profitCalc(items: INumObj[]): INumObj[] {
-  const SCCtaking = 0.5;
-  const bc = tradeSettings.FEES;
-  const taxSCC = tradeSettings.TAX;
-  const isCita = tradeSettings.marketPlaceisCitadel;
+export function profitCalc(
+    items: INumObj[],
+    activeSettings: ITradeSettings,
+): INumObj[] {
+    const SCCtaking = 0.5;
+    const bc = activeSettings.FEES;
+    const taxSCC = activeSettings.TAX;
+    const isCita = activeSettings.marketPlaceisCitadel;
 
-  return items
-    .flatMap((item: INumObj) => {
-      let buy = item.buy;
-      let sell = item.sell;
-      buy += isCita
-        ? item.buy * 0.01 * taxSCC + item.buy * 0.01 * SCCtaking + 100
-        : Math.max(item.buy * 0.01 * tradeSettings.FEES, 100);
-      sell -= isCita
-        ? item.sell * 0.01 * taxSCC + item.sell * 0.01 * SCCtaking + 100
-        : item.sell * 0.01 * taxSCC + Math.max(item.sell * 0.01 * bc, 100);
-      const invest = buy;
-      const ROI = ((sell - buy) / invest) * 100;
-      const IPM = ROI * item.vol;
-      if (ROI < 0 || IPM < 0) return [];
-      return [
-        {
-          ...item,
-          roi: Math.floor(ROI),
-          ipm: Math.floor(IPM),
-        },
-      ];
-    })
-    .filter(Boolean);
+    return items
+        .flatMap((item: INumObj) => {
+            let buy = item.buy;
+            let sell = item.sell;
+            buy += isCita
+                ? item.buy * 0.01 * taxSCC + item.buy * 0.01 * SCCtaking + 100
+                : Math.max(item.buy * 0.01 * bc, 100);
+            sell -= isCita
+                ? item.sell * 0.01 * taxSCC + item.sell * 0.01 * SCCtaking + 100
+                : item.sell * 0.01 * taxSCC +
+                  Math.max(item.sell * 0.01 * bc, 100);
+
+            const invest = buy;
+            if (invest <= 0) return [];
+
+            const ROI = ((sell - buy) / invest) * 100;
+            const IPM = ROI * item.vol;
+            if (ROI < 0 || IPM < 0) return [];
+            return [
+                {
+                    ...item,
+                    roi: Math.floor(ROI),
+                    ipm: Math.floor(IPM),
+                },
+            ];
+        })
+        .filter(Boolean);
 }
 
 // const caldariStand = 2.03;

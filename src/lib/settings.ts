@@ -37,3 +37,9 @@ export const userStats: IUserStats = {
         stationOwnerStand: 0,
     },
 };
+
+export const userSkills = {
+    broker_relationship: 1,
+    advanced_broker_relationship: 1,
+    accounting: 1,
+};
