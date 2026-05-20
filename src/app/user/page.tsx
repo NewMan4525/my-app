@@ -9,7 +9,7 @@ import {
     userStats as defaultUserStats,
     userSkills as defaultUserSkills,
 } from '@/src/lib/settings';
-import { InputsBlockOptionCreator } from '@/src/lib_front/classes';
+import { InputsBlockOptionCreator } from '@/src/utils/classes';
 import { setToStorage, getFromStorage } from '@/src/utils/storage';
 import { IUserStats } from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';

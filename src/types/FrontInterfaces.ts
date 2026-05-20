@@ -1,3 +1,4 @@
+// src/types/frontInterfaces
 export interface IInputProps {
     inputType: string;
     labelText: string;

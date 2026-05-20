@@ -1,13 +1,19 @@
-// app/buy/page.tsx
+// src/app/buy/page.tsx
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './buy.module.css';
 import OptionBar from '@/src/components-feature/optionsBar';
-import Overview from '@/src/components-generic/overview'; // Импортируем наш оверлей
+import Overview from '@/src/components-generic/overview';
+import Table, { ITableColumn } from '@/src/components-generic/table';
 import { getFromStorage } from '@/src/utils/storage';
-import { ITradeSettings, IUserStats } from '@/src/types/interfaces';
+import { calculateModifiedIsk } from '@/src/utils/clipboardModify'; // Импорт утилиты
+import {
+    ITradeSettings,
+    IUserStats,
+    IMarketItem,
+} from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';
 
 const InfoPanelNoSSR = dynamic(
@@ -17,6 +23,7 @@ const InfoPanelNoSSR = dynamic(
 
 export default function Buy() {
     const [isOptionsVisible, setIsOptionsVisible] = useState(true);
+    const [marketItems, setMarketItems] = useState<IMarketItem[]>([]);
     const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
@@ -28,6 +35,123 @@ export default function Buy() {
                 handleToggleOptions,
             );
     }, []);
+
+    // 1. ОПРЕДЕЛЯЕМ ФУНКЦИЮ КОПИРОВАНИЯ ВНУТРИ КОМПОНЕНТА
+    const executeCopy = (
+        e: React.MouseEvent<HTMLButtonElement>,
+        text: string,
+        type: 'name' | 'buy' | 'sell',
+    ) => {
+        e.stopPropagation();
+        const button = e.currentTarget;
+
+        let finalDataToClipboard = text;
+        if (type === 'buy') {
+            finalDataToClipboard = calculateModifiedIsk(Number(text), 'plus');
+        } else if (type === 'sell') {
+            finalDataToClipboard = calculateModifiedIsk(Number(text), 'minus');
+        }
+
+        navigator.clipboard
+            .writeText(finalDataToClipboard)
+            .then(() => {
+                const originalText = button.textContent;
+                button.textContent = '[Copied]';
+                button.classList.add(styles.copyBtnCopied);
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove(styles.copyBtnCopied);
+                }, 1000);
+            })
+            .catch((err) => {
+                console.error('Failed to copy text:', err);
+            });
+    };
+
+    // 2. ПЕРЕНЕСТИ СЮДА: buyColumns теперь находится внутри Buy и видит executeCopy!
+    const buyColumns: ITableColumn<IMarketItem>[] = [
+        {
+            key: 'vol',
+            header: 'vol',
+            sortable: true,
+            sortPath: 'vol',
+            render: (item) => item.vol.toLocaleString(),
+        },
+        {
+            key: 'buy',
+            header: 'buy',
+            sortable: true,
+            sortPath: 'buy',
+            render: (item) => (
+                <>
+                    <button
+                        type="button"
+                        className={styles.copyBtn}
+                        title="Copy modified buy price (+1 step)"
+                        onClick={(e) =>
+                            executeCopy(e, item.buy.toString(), 'buy')
+                        }
+                    >
+                        [Copy]
+                    </button>
+                    <span style={{ marginLeft: '6px' }}>
+                        {item.buy.toLocaleString()}
+                    </span>
+                </>
+            ),
+        },
+        {
+            key: 'sell',
+            header: 'sell',
+            sortable: true,
+            sortPath: 'sell',
+            render: (item) => item.sell.toLocaleString(),
+        },
+        {
+            key: 'roi',
+            header: 'ROI',
+            sortable: true,
+            sortPath: 'roi',
+            render: (item) => (
+                <span
+                    className={item.roi > 0 ? styles.positive : styles.negative}
+                >
+                    {item.roi}%
+                </span>
+            ),
+        },
+        {
+            key: 'name',
+            header: 'Name',
+            sortable: true,
+            sortPath: 'name',
+            render: (item) => (
+                <>
+                    <button
+                        type="button"
+                        className={styles.copyBtn}
+                        title="Copy item name"
+                        onClick={(e) => executeCopy(e, item.name, 'name')}
+                    >
+                        [Copy]
+                    </button>
+                    <span style={{ marginLeft: '6px' }}>{item.name}</span>
+                </>
+            ),
+        },
+        {
+            key: 'ipm',
+            header: 'IPM',
+            sortable: true,
+            sortPath: 'ipm',
+            render: (item) => (
+                <span className={styles.positive}>
+                    {item.ipm.toLocaleString()}
+                </span>
+            ),
+        },
+    ];
 
     const handlePageClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
@@ -70,7 +194,12 @@ export default function Buy() {
                     if (!response.ok)
                         throw new Error('Network response was not ok');
                     const result = await response.json();
-                    console.log('Данные получены успешно:', result);
+
+                    if (result && Array.isArray(result.data)) {
+                        setMarketItems(result.data);
+                    } else {
+                        setMarketItems([]);
+                    }
                 } catch (error) {
                     console.error('Ошибка POST запроса:', error);
                     alert('Failed to fetch data from server.');
@@ -78,20 +207,10 @@ export default function Buy() {
             });
             return;
         }
-
-        if (action === 'copy') {
-            const textToCopy = target.dataset.clipboardValue ?? '';
-            navigator.clipboard.writeText(textToCopy);
-            return;
-        }
     };
 
     return (
         <section onClick={handlePageClick}>
-            {/* 
-               ПЕРЕДАЕМ СЮДА КОМПОНЕНТЫ КАК CHILDREN.
-               Если isVisible={true} (display: block), infoPanel рендерится внутри оверлея под опциями.
-            */}
             <Overview isVisible={isOptionsVisible}>
                 <OptionBar />
                 <div className="container" style={{ marginTop: '10px' }}>
@@ -99,23 +218,21 @@ export default function Buy() {
                 </div>
             </Overview>
 
-            {/* ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ */}
             <div className={`${styles.container} container`}>
                 {isPending && (
                     <div className={styles.loadingOverlay}>
                         Loading Server HTML...
                     </div>
                 )}
-
-                {/* 
-                   ЛОГИКА ВЫКЛЮЧЕНИЯ: 
-                   Если оверлей открыт (display: block), то здесь условие вернет null,
-                   и инфо-панель исчезнет из основного потока страницы под Header,
-                   а таблица поднимется на самый верх к шапке.
-                */}
                 {!isOptionsVisible && <InfoPanelNoSSR isPending={isPending} />}
 
-                <table>{/* Таблица ордеров */}</table>
+                <Table
+                    items={marketItems}
+                    columns={buyColumns}
+                    rowKey="type_id"
+                    isPending={isPending}
+                    emptyMessage="📊 No data loaded. Configure settings and click 'Get Data'."
+                />
             </div>
         </section>
     );

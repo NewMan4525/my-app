@@ -6,7 +6,7 @@ import styles from './css/optionsBar.module.css';
 import InputsBlock from './inputsBlock';
 import { HUBS, TIME } from '@/src/lib/constants';
 import { tradeSettings as defaultTradeSettings } from '@/src/lib/settings';
-import { InputsBlockOptionCreator } from '@/src/lib_front/classes';
+import { InputsBlockOptionCreator } from '@/src/utils/classes';
 import { setToStorage, getFromStorage } from '@/src/utils/storage';
 import { ITradeSettings } from '@/src/types/interfaces';
 

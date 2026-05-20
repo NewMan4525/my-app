@@ -50,7 +50,7 @@ export async function executeGetData(activeSettings: ITradeSettings) {
 
     const infoUrls: string[] = urlsConstructor.info(itemGen3);
     const infoData: IInfo[] = (await queryHandler<IInfo[]>(infoUrls)).flat();
-    const itemGen4 = addInfoToItem(itemGen2Filtred2, infoData);
+    const itemGen4 = addInfoToItem(itemGen3, infoData);
 
     return itemGen4;
 }

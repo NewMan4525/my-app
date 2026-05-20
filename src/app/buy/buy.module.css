@@ -1,0 +1,49 @@
+/* src/app/buy/buy.module.css */
+
+.container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 10px;
+}
+
+.loadingOverlay {
+    text-align: center;
+    color: var(--warn);
+    padding: 10px;
+    font-style: italic;
+}
+
+.positive {
+    color: var(--positive);
+}
+
+.negative {
+    color: var(--negative);
+}
+
+/* Кнопка [Copy] */
+.copyBtn {
+    font-size: 11px;
+    padding: 0px 2px;
+    opacity: 0.5;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    transition:
+        transform 0.1s ease,
+        color 0.1s ease;
+}
+
+.copyBtn:hover {
+    opacity: 1;
+}
+
+/* Зеленый фидбек успешного копирования */
+.copyBtnCopied {
+    color: #00ff88 !important;
+    transform: scale(1.1);
+    opacity: 1 !important;
+}
