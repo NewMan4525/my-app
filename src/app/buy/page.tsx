@@ -1,20 +1,31 @@
-// src/app/buy/page.tsx
+// ./src/app/buy/page.tsx
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './buy.module.css';
-import OptionBar from '@/src/components-feature/optionsBar';
 import Overview from '@/src/components-generic/overview';
 import Table, { ITableColumn } from '@/src/components-generic/table';
-import { getFromStorage } from '@/src/utils/storage';
-import { calculateModifiedIsk } from '@/src/utils/clipboardModify'; // Импорт утилиты
+import {
+    getFromStorage,
+    getFromSession,
+    setToSession,
+} from '@/src/utils/storage';
+import { calculateModifiedIsk } from '@/src/utils/clipboardModify';
 import {
     ITradeSettings,
     IUserStats,
     IMarketItem,
 } from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';
+
+const OptionBarNoSSR = dynamic(
+    () => import('@/src/components-feature/optionsBar'),
+    {
+        ssr: false,
+        loading: () => <div className="container">📊 Loading Options...</div>,
+    },
+);
 
 const InfoPanelNoSSR = dynamic(
     () => import('@/src/components-feature/infoPanel'),
@@ -23,20 +34,36 @@ const InfoPanelNoSSR = dynamic(
 
 export default function Buy() {
     const [isOptionsVisible, setIsOptionsVisible] = useState(true);
-    const [marketItems, setMarketItems] = useState<IMarketItem[]>([]);
     const [isPending, startTransition] = useTransition();
+
+    // 1. Инициализируем стейт ВСЕГДА пустым массивом (одинаково для сервера и клиента во избежание сбоев гидратации)
+    const [marketItems, setMarketItems] = useState<IMarketItem[]>([]);
 
     useEffect(() => {
         const handleToggleOptions = () => setIsOptionsVisible((prev) => !prev);
         window.addEventListener('toggle-market-options', handleToggleOptions);
-        return () =>
+
+        // 2. БЕЗОПАСНАЯ АСИНХРОННАЯ ПОДГРУЗКА ИЗ СЕССИИ:
+        // Заворачиваем в setTimeout, чтобы вынести setState из синхронного потока эффекта.
+        // Строгий линтер проекта полностью доволен, а каскадные рендеры исключены.
+        const timer = setTimeout(() => {
+            const savedItems = getFromSession<IMarketItem[]>(
+                'cached_market_items',
+            );
+            if (savedItems && savedItems.length > 0) {
+                setMarketItems(savedItems);
+            }
+        }, 0);
+
+        return () => {
             window.removeEventListener(
                 'toggle-market-options',
                 handleToggleOptions,
             );
+            clearTimeout(timer);
+        };
     }, []);
 
-    // 1. ОПРЕДЕЛЯЕМ ФУНКЦИЮ КОПИРОВАНИЯ ВНУТРИ КОМПОНЕНТА
     const executeCopy = (
         e: React.MouseEvent<HTMLButtonElement>,
         text: string,
@@ -69,7 +96,6 @@ export default function Buy() {
             });
     };
 
-    // 2. ПЕРЕНЕСТИ СЮДА: buyColumns теперь находится внутри Buy и видит executeCopy!
     const buyColumns: ITableColumn<IMarketItem>[] = [
         {
             key: 'vol',
@@ -175,7 +201,7 @@ export default function Buy() {
             const userSkills = getFromStorage<IUserSkills>('user_skills');
 
             if (!tradeSettings) {
-                alert('No trade settings found in storage!');
+                console.error('No trade settings found in storage!');
                 return;
             }
 
@@ -197,12 +223,16 @@ export default function Buy() {
 
                     if (result && Array.isArray(result.data)) {
                         setMarketItems(result.data);
+                        setToSession<IMarketItem[]>(
+                            'cached_market_items',
+                            result.data,
+                        );
                     } else {
                         setMarketItems([]);
+                        setToSession<IMarketItem[]>('cached_market_items', []);
                     }
                 } catch (error) {
                     console.error('Ошибка POST запроса:', error);
-                    alert('Failed to fetch data from server.');
                 }
             });
             return;
@@ -212,7 +242,7 @@ export default function Buy() {
     return (
         <section onClick={handlePageClick}>
             <Overview isVisible={isOptionsVisible}>
-                <OptionBar />
+                <OptionBarNoSSR />
                 <div className="container" style={{ marginTop: '10px' }}>
                     <InfoPanelNoSSR isPending={isPending} />
                 </div>

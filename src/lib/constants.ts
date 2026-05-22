@@ -14,8 +14,8 @@ export const HUBS: IHubs = {
                 name: 'Caldari Navy',
             },
             faction: {
-                alias: 'caldari',
-                name: 'Caldari',
+                alias: 'concord',
+                name: 'Concord',
             },
         },
     },

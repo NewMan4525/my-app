@@ -1,3 +1,4 @@
+// ./src/utils/classes.ts
 import { IInputProps } from '@/src/types/frontInterfaces';
 
 interface IOption {
@@ -48,6 +49,7 @@ export class InputsBlockOptionCreator {
             groupName: this.prepareLabelText(it.groupName ?? ''),
             inputType: input.type,
             labelText: this.prepareLabelText(it.text ?? headerText),
+            // ВОЗВРАЩАЕМ ОРИГИНАЛЬНУЮ СТРОГУЮ СБОРКУ: Индекс key критически важен для MPA-разделения групп
             inputName: it.name + String(key),
             alias: it.text
                 ? headerText + '_' + it.text

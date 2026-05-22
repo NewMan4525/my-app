@@ -1,3 +1,4 @@
+// ./src/components-feature/inputsBlock.tsx
 import styles from './css/inputsBlock.module.css';
 import { IInputProps } from '@/src/types/frontInterfaces';
 import InputRadio from '@/src/components-generic/inputRadio';
@@ -5,10 +6,11 @@ import InputNumber from '@/src/components-generic/inputNumber';
 import InputSubmit from '@/src/components-generic/inputSubmit';
 import InputButton from '@/src/components-generic/inputButton';
 import InputReset from '@/src/components-generic/inputReset';
+
 interface Props {
     h3: string;
     inputsProps: IInputProps[][];
-    values: Record<string, number>; // Заменили any на строгий тип объекта состояния
+    values: Record<string, number>;
     onNumberChange: (name: string, value: number) => void;
     onRadioChange: (groupName: string, value: number) => void;
 }
@@ -21,7 +23,6 @@ export default function InputsBlock({
     onRadioChange,
 }: Props) {
     const inputCalc = (inputProps: IInputProps[]) => {
-        // Безопасно берем первый элемент массива для определения типа группы инпутов
         const firstInput = inputProps[0];
         if (!firstInput) return null;
 
@@ -37,7 +38,6 @@ export default function InputsBlock({
                     />
                 );
             case 'radio':
-                // Для радио-групп значение ищется по имени самой группы (inputName)
                 return (
                     <InputRadio
                         options={inputProps}

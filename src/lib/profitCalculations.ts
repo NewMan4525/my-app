@@ -1,36 +1,93 @@
-// src/lib/profitCalculations.ts
+// ./src/lib/profitCalculations.ts
 import { INumObj, ITradeSettings } from '@/src/types/interfaces';
+import { IUserSkills } from '@/src/types/frontInterfaces';
+
+interface IHubStats {
+    factionStand: number;
+    stationOwnerStand: number;
+}
 
 export function profitCalc(
     items: INumObj[],
     activeSettings: ITradeSettings,
+    hubStats: IHubStats,
+    userSkills: IUserSkills,
 ): INumObj[] {
-    const SCCtaking = 0.5;
-    const bc = activeSettings.FEES;
-    const taxSCC = activeSettings.TAX;
-    const isCita = activeSettings.marketPlaceisCitadel;
+    const buyIsCita = activeSettings.marketPlaceBuyIsCitadel;
+    const sellIsCita = activeSettings.marketPlaceSellIsCitadel;
+
+    // Вычисление процентов по оригинальным формулам игры
+    const npcBrokerFeePercent =
+        3.0 -
+        0.3 * (userSkills.broker_relationship ?? 1) -
+        0.03 * (hubStats.factionStand ?? 0) -
+        0.02 * (hubStats.stationOwnerStand ?? 0);
+    const salesTaxPercent = 7.5 - 7.5 * 0.11 * (userSkills.accounting ?? 1);
+
+    const citadelBrokerFeePercent = activeSettings.FEES;
+    const sccTakingPercent = 0.5;
 
     return items
         .flatMap((item: INumObj) => {
-            let buy = item.buy;
-            let sell = item.sell;
-            buy += isCita
-                ? item.buy * 0.01 * taxSCC + item.buy * 0.01 * SCCtaking + 100
-                : Math.max(item.buy * 0.01 * bc, 100);
-            sell -= isCita
-                ? item.sell * 0.01 * taxSCC + item.sell * 0.01 * SCCtaking + 100
-                : item.sell * 0.01 * taxSCC +
-                  Math.max(item.sell * 0.01 * bc, 100);
+            const rawBuy = item.buy;
+            const rawSell = item.sell;
 
-            const invest = buy;
+            let brokerFeeBuy = 0;
+            let brokerFeeSell = 0;
+
+            // 1. Считаем налог на закупку (Buy Order)
+            if (buyIsCita) {
+                const citadelFeeBuy =
+                    Math.round(rawBuy * (citadelBrokerFeePercent / 100) * 100) /
+                    100;
+                const sccFeeBuy =
+                    Math.round(rawBuy * (sccTakingPercent / 100) * 100) / 100;
+                brokerFeeBuy = citadelFeeBuy + sccFeeBuy + 100; // Фиксированный сбор 100 ISK
+            } else {
+                brokerFeeBuy = Math.max(
+                    Math.round(rawBuy * (npcBrokerFeePercent / 100) * 100) /
+                        100,
+                    100,
+                );
+            }
+
+            // 2. Считаем налог на выставление ордера продажи (Sell Order)
+            if (sellIsCita) {
+                const citadelFeeSell =
+                    Math.round(
+                        rawSell * (citadelBrokerFeePercent / 100) * 100,
+                    ) / 100;
+                const sccFeeSell =
+                    Math.round(rawSell * (sccTakingPercent / 100) * 100) / 100;
+                brokerFeeSell = citadelFeeSell + sccFeeSell + 100;
+            } else {
+                brokerFeeSell = Math.max(
+                    Math.round(rawSell * (npcBrokerFeePercent / 100) * 100) /
+                        100,
+                    100,
+                );
+            }
+
+            // 3. Налог с продаж (Sales Tax) берется всегда от грязной цены продажи
+            const salesTax =
+                Math.round(rawSell * (salesTaxPercent / 100) * 100) / 100;
+
+            const totalBuyCost = rawBuy + brokerFeeBuy;
+            const totalSellRevenue = rawSell - brokerFeeSell - salesTax;
+
+            const invest = totalBuyCost;
             if (invest <= 0) return [];
 
-            const ROI = ((sell - buy) / invest) * 100;
+            const netProfit = totalSellRevenue - totalBuyCost;
+            const ROI = (netProfit / invest) * 100;
             const IPM = ROI * item.vol;
+
             if (ROI < 0 || IPM < 0) return [];
+
             return [
                 {
                     ...item,
+                    margin: Math.floor(ROI),
                     roi: Math.floor(ROI),
                     ipm: Math.floor(IPM),
                 },

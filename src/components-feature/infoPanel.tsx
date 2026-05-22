@@ -1,4 +1,4 @@
-// components-feature/infoPanel.tsx
+// ./src/components-feature/infoPanel.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +7,6 @@ import { getFromStorage } from '@/src/utils/storage';
 import { ITradeSettings } from '@/src/types/interfaces';
 import { HUBS } from '@/src/lib/constants';
 
-// Строгий интерфейс пропсов (ЗАПРЕЩЕН any)
 interface InfoPanelProps {
     isPending: boolean;
 }
@@ -34,14 +33,23 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
         const regionName = currentHub
             ? `${currentHub.region.name} (${currentHub.system.name})`
             : marketSettings.region;
-        const stationType = marketSettings.marketPlaceisCitadel
+
+        // Раздельный текстовый вывод статусов станций
+        const buyStationType = marketSettings.marketPlaceBuyIsCitadel
+            ? 'Citadel'
+            : 'NPC Station';
+        const sellStationType = marketSettings.marketPlaceSellIsCitadel
             ? 'Citadel'
             : 'NPC Station';
 
         return (
             <>
                 <p>
-                    <strong>Hub:</strong> {regionName} ({stationType})
+                    <strong>Hub:</strong> {regionName}
+                </p>
+                <p>
+                    <strong>Setup:</strong> Buy in [{buyStationType}] ➔ Sell in
+                    [{sellStationType}]
                 </p>
                 <p>
                     <strong>Price limit:</strong>{' '}
@@ -66,7 +74,6 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
     return (
         <div className={styles.settingsInfo}>
             <div className={styles.info_area}>{renderContent()}</div>
-            {/* Блокируем клики и меняем текст, когда идет запрос на сервер */}
             <button
                 data-action="get-data"
                 className={styles.info_button}

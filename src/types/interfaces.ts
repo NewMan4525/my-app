@@ -53,7 +53,8 @@ export interface ITradeSettings {
     ordersMax: number;
     TAX: number;
     FEES: number;
-    marketPlaceisCitadel: boolean;
+    marketPlaceBuyIsCitadel: boolean; // НАЛОГ ПРИ ЗАКУПКЕ (Цитадель или NPC)
+    marketPlaceSellIsCitadel: boolean; // НАЛОГ ПРИ ПРОДАЖЕ (Цитадель или NPC)
 }
 
 export interface IUserStats {

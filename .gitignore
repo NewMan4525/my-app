@@ -43,6 +43,7 @@ next-env.d.ts
 # db
 *.db
 /src/db/*.db
-
+-wal
+-shm
 # node
 package-lock.json

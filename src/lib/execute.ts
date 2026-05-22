@@ -1,7 +1,16 @@
-// src/lib/execute.ts
+// ./src/lib/execute.ts
 import { urlsConstructor } from '@/src/lib/urlConstructors';
 import { HUBS } from '@/src/lib/constants';
-import { IHistory, IOrder, IInfo, ITradeSettings } from '../types/interfaces'; // Импортируем интерфейс настроек
+import {
+    IOrder,
+    ITradeSettings,
+    IUserStats,
+    IHistory,
+    IInfo,
+    IMarketItem,
+    INumObj,
+} from '../types/interfaces';
+import { IUserSkills } from '../types/frontInterfaces';
 import { getNeighborSystems, jumpFilter } from './location';
 import {
     ordersHandler,
@@ -12,45 +21,75 @@ import { priceFilter, marginFilter, volFilter, ordersFilter } from './filtres';
 import { queryHandler } from './querysHandler';
 import { profitCalc } from './profitCalculations';
 
-// Функция теперь принимает динамический объект настроек с фронтенда
-export async function executeGetData(activeSettings: ITradeSettings) {
+export async function executeGetData(
+    activeSettings: ITradeSettings,
+    activeStats: IUserStats,
+    activeSkills: IUserSkills,
+): Promise<IMarketItem[]> {
     const regionId: number = HUBS[activeSettings.region].region.id;
     const hubSystemId: number = HUBS[activeSettings.region].system.id;
 
+    // 1. ПОЛУЧЕНИЕ ДАННЫХ ОРДЕРОВ: Стягиваем ВСЕ сырые ордера региона целиком (исправлено взятие строки из массива)
     const firstPageUrl: string = urlsConstructor.orders(regionId, 1)[0];
-    const initialResp: Awaited<Response> = (await fetch(firstPageUrl, {
-        method: 'HEAD',
-    })) as Response;
-
+    const initialResp = await fetch(firstPageUrl, { method: 'HEAD' });
     const quantity: number = Number(initialResp.headers.get('x-pages')) || 1;
+
     const orderUrls: string[] = urlsConstructor.orders(regionId, quantity);
-    const orders: IOrder[] = (await queryHandler<IOrder[]>(orderUrls)).flat();
+    const ordersResponses = await queryHandler<IOrder[]>(orderUrls);
+    const orders: IOrder[] = ordersResponses.flat();
+
+    if (!orders || orders.length === 0) return [];
+
+    // 2. ДИСТАНЦИОННАЯ ФИЛЬТРАЦИЯ: Оставляем ордера хаба + 1 прыжок
     const neighborSystems: number[] = await getNeighborSystems(hubSystemId);
     const orders1jump: IOrder[] = jumpFilter(orders, neighborSystems);
 
-    const itemGen1 = ordersHandler(orders1jump);
+    // 3. АГРЕГАЦИЯ ОРДЕРОВ: Вычисляем лучшие buy/sell цены для каждого товара хаба
+    const itemGen1Raw = ordersHandler(orders1jump);
 
-    // ПЕРЕДАЕМ АРГУМЕНТЫ ДАЛЬШЕ ПО ЦЕПОЧКЕ:
-    const itemGen1Filtred1 = priceFilter(itemGen1, activeSettings);
-    const itemGen1Filtred2 = marginFilter(itemGen1Filtred1, activeSettings);
-
-    const historyUrls: string[] = urlsConstructor.history(
-        itemGen1Filtred2,
-        regionId,
+    // Очищаем промежуточный массив от null значений бэкенда через Type Guard
+    const itemGen1: INumObj[] = itemGen1Raw.filter(
+        (item): item is INumObj => item !== null,
     );
-    const historyData = await queryHandler<IHistory[]>(historyUrls);
-    const itemGen2 = addHistoryToItems(itemGen1Filtred2, historyData);
 
-    const itemGen2Filtred1 = ordersFilter(itemGen2, activeSettings);
-    const itemGen2Filtred2 = volFilter(itemGen2Filtred1, activeSettings) as {
-        type_id: number;
-    }[];
+    if (itemGen1.length === 0) return [];
 
-    const itemGen3 = profitCalc(itemGen2Filtred2, activeSettings);
+    // 4. ДОЗАГРУЗКА ИСТОРИИ ПОШТУЧНО: Идем в queryHandler за историей ТОЛЬКО для товаров хаба
+    const historyUrls: string[] = urlsConstructor.history(itemGen1, regionId);
+    const historyResponses = await queryHandler<IHistory[]>(historyUrls);
+    const itemGen2Raw = addHistoryToItems(itemGen1, historyResponses);
+    const itemGen2: INumObj[] = itemGen2Raw.filter(
+        (item): item is INumObj => item !== null,
+    );
 
+    // 5. РАСЧЕТ МАРЖИНАЛЬНОСТИ И КОМИССИЙ: Считаем ROI/IPM с учетом персональных скиллов игрока
+    const currentHubStats = activeStats[activeSettings.region];
+    const itemGen3 = profitCalc(
+        itemGen2,
+        activeSettings,
+        currentHubStats,
+        activeSkills,
+    );
+
+    if (itemGen3.length === 0) return [];
+
+    // 6. ОБОГАЩЕНИЕ СТАТИЧЕСКИМИ ИМЕНАМИ: Стягиваем имена только для прибыльных позиций (ROI > 0)
     const infoUrls: string[] = urlsConstructor.info(itemGen3);
-    const infoData: IInfo[] = (await queryHandler<IInfo[]>(infoUrls)).flat();
-    const itemGen4 = addInfoToItem(itemGen3, infoData);
+    const infoResponses = await queryHandler<IInfo[]>(infoUrls);
+    const itemGen4Raw = addInfoToItem(itemGen3, infoResponses.flat());
 
-    return itemGen4;
+    // Переводим через safe cast в unknown -> IMarketItem[] для строгой типизации вывода
+    const itemGen4 = itemGen4Raw as unknown as IMarketItem[];
+
+    // 7. ИЗОЛИРОВАННАЯ ПОЛЬЗОВАТЕЛЬСКАЯ ФИЛЬТРАЦИЯ: Применяем кастомные фильтры формы в последнюю очередь
+    const filterInput = itemGen4 as unknown as (INumObj | null)[];
+
+    const filterStep1 = priceFilter(filterInput, activeSettings);
+    const filterStep2 = marginFilter(filterStep1, activeSettings);
+    const filterStep3 = ordersFilter(filterStep2, activeSettings);
+    const filterStep4 = volFilter(filterStep3, activeSettings);
+
+    const finalResult = filterStep4 as unknown as IMarketItem[];
+
+    return finalResult;
 }

@@ -1,4 +1,4 @@
-// components-feature/optionsBar.tsx
+// ./src/components-feature/optionsBar.tsx
 'use client';
 
 import { useState, FormEvent } from 'react';
@@ -10,7 +10,6 @@ import { InputsBlockOptionCreator } from '@/src/utils/classes';
 import { setToStorage, getFromStorage } from '@/src/utils/storage';
 import { ITradeSettings } from '@/src/types/interfaces';
 
-// Генератор стейта на основе настроек (из localStorage или дефолтов бэкенда)
 const getTradeValues = (saved: ITradeSettings | null) => {
     const current = saved ?? defaultTradeSettings;
     return {
@@ -23,7 +22,10 @@ const getTradeValues = (saved: ITradeSettings | null) => {
         margin0: current.marginMin,
         margin1: current.marginMax,
         region_create_orders: current.region,
-        type_station_create_orders: current.marketPlaceisCitadel
+        type_station_buy: current.marketPlaceBuyIsCitadel
+            ? 'citadel'
+            : 'npc_station',
+        type_station_sell: current.marketPlaceSellIsCitadel
             ? 'citadel'
             : 'npc_station',
         history_time_period: current.time,
@@ -34,32 +36,18 @@ export default function OptionBar() {
     const [formValues, setFormValues] = useState<
         Record<string, number | string>
     >(() => {
-        if (typeof window !== 'undefined') {
-            const saved = getFromStorage<ITradeSettings>('trade_settings');
-            return getTradeValues(saved);
-        }
-        return getTradeValues(null);
+        const saved = getFromStorage<ITradeSettings>('trade_settings');
+        return getTradeValues(saved);
     });
 
     const handleNumberChange = (name: string, value: number) => {
         setFormValues((prev) => ({ ...prev, [name]: value }));
     };
 
-    // components-feature/optionsBar.tsx
-
     const handleRadioChange = (groupName: string, value: number) => {
+        // Уникальный префикс для разделения радио-кнопок
         const cleanGroupName = groupName.replace(/\d+$/, '');
 
-        if (
-            cleanGroupName === 'skills_broker_relationship' ||
-            cleanGroupName === 'skills_advanced_broker_relationship' ||
-            cleanGroupName === 'skills_accounting'
-        ) {
-            setFormValues((prev) => ({ ...prev, [groupName]: value }));
-            return;
-        }
-
-        // 1. Строгая проверка для РЕГИОНОВ (работаем конкретно с marketplace0)
         if (groupName === 'marketplace0') {
             const hubKeys = Object.keys(HUBS);
             const selectedRegion = HUBS[hubKeys[value - 1]].region.alias;
@@ -70,24 +58,25 @@ export default function OptionBar() {
             return;
         }
 
-        // 2. Строгая проверка для ТИПА СТАНЦИЙ (работаем конкретно с marketplace1)
+        // РАДИО-ГРУППА ЗАКУПКИ (marketplace1)
         if (groupName === 'marketplace1') {
-            if (value === 1) {
-                setFormValues((prev) => ({
-                    ...prev,
-                    type_station_create_orders: 'citadel',
-                }));
-            } else if (value === 2) {
-                setFormValues((prev) => ({
-                    ...prev,
-                    type_station_create_orders: 'npc_station',
-                }));
-            }
+            setFormValues((prev) => ({
+                ...prev,
+                type_station_buy: value === 1 ? 'citadel' : 'npc_station',
+            }));
             return;
         }
 
-        // 3. Для периодов времени (Time)
-        if (groupName.startsWith('time')) {
+        // РАДИО-ГРУППА ПРОДАЖИ (marketplace2)
+        if (groupName === 'marketplace2') {
+            setFormValues((prev) => ({
+                ...prev,
+                type_station_sell: value === 1 ? 'citadel' : 'npc_station',
+            }));
+            return;
+        }
+
+        if (cleanGroupName === 'time') {
             const timeKeys = Object.keys(TIME);
             const selectedTime = timeKeys[value - 1];
             setFormValues((prev) => ({
@@ -99,7 +88,6 @@ export default function OptionBar() {
 
     const handleReset = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // Сброс до дефолтов бэкенда
         setFormValues(getTradeValues(null));
     };
 
@@ -119,14 +107,15 @@ export default function OptionBar() {
             ordersMax: Number(formValues['orders1']),
             TAX: defaultTradeSettings.TAX,
             FEES: defaultTradeSettings.FEES,
-            marketPlaceisCitadel:
-                formValues['type_station_create_orders'] === 'citadel',
+            marketPlaceBuyIsCitadel:
+                formValues['type_station_buy'] === 'citadel',
+            marketPlaceSellIsCitadel:
+                formValues['type_station_sell'] === 'citadel',
         };
 
         setToStorage<ITradeSettings>('trade_settings', updatedTradeSettings);
     };
 
-    // ... Логика castedValues и разметки settings остается прежней ...
     const castedValues: Record<string, number> = {};
     Object.keys(formValues).forEach((key) => {
         const val = formValues[key];
@@ -136,8 +125,10 @@ export default function OptionBar() {
                     Object.keys(HUBS).findIndex(
                         (h) => HUBS[h].region.alias === val,
                     ) + 1;
-            } else if (key === 'type_station_create_orders') {
+            } else if (key === 'type_station_buy') {
                 castedValues['marketplace1'] = val === 'citadel' ? 1 : 2;
+            } else if (key === 'type_station_sell') {
+                castedValues['marketplace2'] = val === 'citadel' ? 1 : 2;
             } else if (key === 'history_time_period') {
                 castedValues['time0'] = Object.keys(TIME).indexOf(val) + 1;
             }
@@ -238,60 +229,57 @@ export default function OptionBar() {
         new InputsBlockOptionCreator('marketplace', [
             {
                 type: 'radio',
-                options: Array.from(
-                    { length: Object.keys(HUBS).length },
-                    (_, i) => {
-                        const regionAlias =
-                            HUBS[Object.keys(HUBS)[i]].region.alias;
-                        return {
-                            groupName: 'region_create_orders',
-                            name: 'marketplace',
-                            text: regionAlias,
-                            defaultChecked:
-                                regionAlias ===
-                                formValues['region_create_orders'],
-                        };
-                    },
-                ),
+                options: Object.keys(HUBS).map((h, idx) => ({
+                    groupName: 'Hub region',
+                    name: 'marketplace',
+                    text: HUBS[h].region.name,
+                    defaultChecked: castedValues['marketplace0'] === idx + 1,
+                })),
             },
             {
                 type: 'radio',
                 options: [
                     {
-                        groupName: 'type_station_create_orders',
+                        groupName: 'Buy Station',
                         name: 'marketplace',
-                        text: 'citadel',
-                        defaultChecked:
-                            formValues['type_station_create_orders'] ===
-                            'citadel',
+                        text: 'Citadel',
+                        defaultChecked: castedValues['marketplace1'] === 1,
                     },
                     {
-                        groupName: 'type_station_create_orders',
+                        groupName: 'Buy Station',
                         name: 'marketplace',
-                        text: 'npc_station',
-                        defaultChecked:
-                            formValues['type_station_create_orders'] ===
-                            'npc_station',
+                        text: 'NPC Station',
+                        defaultChecked: castedValues['marketplace1'] === 2,
+                    },
+                ],
+            },
+            {
+                type: 'radio',
+                options: [
+                    {
+                        groupName: 'Sell Station',
+                        name: 'marketplace',
+                        text: 'Citadel',
+                        defaultChecked: castedValues['marketplace2'] === 1,
+                    },
+                    {
+                        groupName: 'Sell Station',
+                        name: 'marketplace',
+                        text: 'NPC Station',
+                        defaultChecked: castedValues['marketplace2'] === 2,
                     },
                 ],
             },
         ]),
-        new InputsBlockOptionCreator('time', [
+        new InputsBlockOptionCreator('time_period', [
             {
                 type: 'radio',
-                options: Array.from(
-                    { length: Object.keys(TIME).length },
-                    (_, i) => {
-                        const timeKey = Object.keys(TIME)[i];
-                        return {
-                            groupName: 'history_time_period',
-                            name: 'time',
-                            text: timeKey,
-                            defaultChecked:
-                                timeKey === formValues['history_time_period'],
-                        };
-                    },
-                ),
+                options: Object.keys(TIME).map((t, idx) => ({
+                    groupName: 'History time period',
+                    name: 'time',
+                    text: t,
+                    defaultChecked: castedValues['time0'] === idx + 1,
+                })),
             },
         ]),
         new InputsBlockOptionCreator('', [
@@ -301,12 +289,7 @@ export default function OptionBar() {
             },
             {
                 type: 'submit',
-                options: [
-                    {
-                        name: 'accept_options',
-                        defaultValue: 'OK',
-                    },
-                ],
+                options: [{ name: 'accept_options', defaultValue: 'OK' }],
             },
         ]),
     ];
@@ -317,7 +300,7 @@ export default function OptionBar() {
             onReset={handleReset}
             className={`${styles.container} container`}
         >
-            <h2 className={styles.h2}>Market options</h2>
+            <h2 className={styles.h2}>Market Options</h2>
             {settings.map((item, i) => (
                 <InputsBlock
                     key={i}

@@ -1,4 +1,4 @@
-// src/app/api/buy/route.ts
+// ./src/app/api/buy/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { executeGetData } from '@/src/lib/execute';
 import {
@@ -8,8 +8,8 @@ import {
 } from '@/src/lib/settings';
 import { ITradeSettings, IUserStats } from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';
-import { initDb } from '@/src/lib/dbHandlers'; // И
-// Строгий интерфейс для входящего JSON (ЗАПРЕЩЕН any)
+import { initDb } from '@/src/lib/dbHandlers';
+
 interface IBuyRequestPayload {
     tradeSettings: Partial<ITradeSettings>;
     userStats: Partial<IUserStats>;
@@ -18,7 +18,6 @@ interface IBuyRequestPayload {
 
 export async function POST(request: NextRequest) {
     try {
-        // ЧИТАЕМ JSON ВМЕСТО FORM DATA (исправляет падение на сервере)
         const body: IBuyRequestPayload = await request.json();
         initDb();
         if (!body || !body.tradeSettings) {
@@ -28,13 +27,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 1. Безопасное локальное перекрытие tradeSettings
+        // Безопасное локальное перекрытие параметров рынка текущего запроса
         const activeTradeSettings: ITradeSettings = {
             ...defaultTradeSettings,
             ...body.tradeSettings,
         };
 
-        // 2. Безопасный глубокий мёрдж userStats для предотвращения undefined ошибок
+        // Безопасный глубокий мёрдж стендингов текущего запроса для предотвращения undefined ошибок
         const activeUserStats: IUserStats = { ...defaultUserStats };
         if (body.userStats) {
             Object.entries(defaultUserStats).forEach(
@@ -52,21 +51,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 3. Безопасное локальное перекрытие userSkills
+        // Безопасное перекрытие скиллов персонажа текущего запроса
         const activeUserSkills: IUserSkills = {
             ...defaultUserSkills,
             ...body.userSkills,
         };
 
-        // Запуск конвейера вычислений (передаем изолированные параметры)
-        const ordersData = await executeGetData(activeTradeSettings);
+        // Запуск изолированного конвейера вычислений
+        const ordersData = await executeGetData(
+            activeTradeSettings,
+            activeUserStats,
+            activeUserSkills,
+        );
 
-        // Возвращаем результат обратно клиенту
+        // Возвращаем полностью просчитанный готовый результат обратно в клиентскую таблицу ордеров
         return NextResponse.json(
             {
                 message: 'Result:',
                 region: activeTradeSettings.region,
-                data: ordersData, // Массив просчитанных ордеров уйдет на клиент
+                data: ordersData,
             },
             { status: 200 },
         );
