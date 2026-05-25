@@ -44,43 +44,62 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
 
         return (
             <>
-                <p>
-                    <strong>Hub:</strong> {regionName}
-                </p>
-                <p>
-                    <strong>Setup:</strong> Buy in [{buyStationType}] ➔ Sell in
-                    [{sellStationType}]
-                </p>
-                <p>
-                    <strong>Price limit:</strong>{' '}
-                    {marketSettings.priceMin.toLocaleString()} -{' '}
-                    {marketSettings.priceMax.toLocaleString()} ISK
-                </p>
-                <p>
-                    <strong>Volume limit:</strong> {marketSettings.volumeMin} -{' '}
-                    {marketSettings.volumeMax}
-                </p>
-                <p>
-                    <strong>Margin limit:</strong> {marketSettings.marginMin}% -{' '}
-                    {marketSettings.marginMax}%
-                </p>
-                <p>
-                    <strong>Time Period:</strong> {marketSettings.time}
-                </p>
+                <div className={styles.renderContent}>
+                    <div className={styles.infoPart}>
+                        <h4>Marketplace</h4>
+                        <p>
+                            <strong>Hub:</strong> {regionName}
+                        </p>
+                        <p>
+                            <strong>Setup:</strong> Buy in [{buyStationType}] ➔
+                            Sell in [{sellStationType}]
+                        </p>
+                    </div>
+                    <div className={styles.infoPart}>
+                        <h4>Market settings</h4>
+                        <p>
+                            <strong>Price limit:</strong>{' '}
+                            {marketSettings.priceMin.toLocaleString()} -{' '}
+                            {marketSettings.priceMax.toLocaleString()} ISK
+                        </p>
+                        <p>
+                            <strong>Volume limit:</strong>{' '}
+                            {marketSettings.volumeMin} -{' '}
+                            {marketSettings.volumeMax}
+                        </p>
+                        <p>
+                            <strong>Margin limit:</strong>{' '}
+                            {marketSettings.marginMin}% -{' '}
+                            {marketSettings.marginMax}%
+                        </p>
+                    </div>
+                    <div className={styles.infoPart}>
+                        <h4>Other</h4>
+                        <p>
+                            <strong>Time Period:</strong> {marketSettings.time}
+                        </p>
+                        <p>
+                            <strong>current comission:</strong>
+                            <span>0.0</span>
+                        </p>
+                    </div>
+                </div>
             </>
         );
     };
 
     return (
-        <div className={styles.settingsInfo}>
+        <div className={styles.contentInfo}>
             <div className={styles.info_area}>{renderContent()}</div>
-            <button
-                data-action="get-data"
-                className={styles.info_button}
-                disabled={isPending}
-            >
-                {isPending ? '...Loading' : 'Get Data'}
-            </button>
+            <div className={styles.leadInfo}>
+                <button
+                    data-action="get-data"
+                    className={styles.info_button}
+                    disabled={isPending}
+                >
+                    {isPending ? '...Loading' : 'Get Data'}
+                </button>
+            </div>
         </div>
     );
 }

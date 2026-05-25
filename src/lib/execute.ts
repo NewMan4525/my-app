@@ -29,13 +29,20 @@ export async function executeGetData(
     const regionId: number = HUBS[activeSettings.region].region.id;
     const hubSystemId: number = HUBS[activeSettings.region].system.id;
 
-    // 1. ПОЛУЧЕНИЕ ДАННЫХ ОРДЕРОВ: Стягиваем ВСЕ сырые ордера региона целиком (исправлено взятие строки из массива)
+    // 1. ПОЛУЧЕНИЕ ДАННЫХ ОРДЕРОВ: Стягиваем ВСЕ сырые ордера региона целиком
     const firstPageUrl: string = urlsConstructor.orders(regionId, 1)[0];
     const initialResp = await fetch(firstPageUrl, { method: 'HEAD' });
     const quantity: number = Number(initialResp.headers.get('x-pages')) || 1;
 
     const orderUrls: string[] = urlsConstructor.orders(regionId, quantity);
-    const ordersResponses = await queryHandler<IOrder[]>(orderUrls);
+
+    // Получаем массив, который может содержать массивы ордеров или null
+    const ordersResponsesRaw = await queryHandler<IOrder[]>(orderUrls);
+
+    // БЕЗОПАСНАЯ ИЗОЛЯЦИЯ NULL ДЛЯ ОРДЕРОВ: Оставляем только успешные страницы
+    const ordersResponses: IOrder[][] = ordersResponsesRaw.filter(
+        (page): page is IOrder[] => page !== null,
+    );
     const orders: IOrder[] = ordersResponses.flat();
 
     if (!orders || orders.length === 0) return [];
@@ -54,10 +61,15 @@ export async function executeGetData(
 
     if (itemGen1.length === 0) return [];
 
-    // 4. ДОЗАГРУЗКА ИСТОРИИ ПОШТУЧНО: Идем в queryHandler за историей ТОЛЬКО для товаров хаба
+    // 4. ДОЗАГРУЗКА ИСТОРИИ ПОШТУЧНО: Передаем активное время третьим аргументом (Фикс ошибки 2)
     const historyUrls: string[] = urlsConstructor.history(itemGen1, regionId);
     const historyResponses = await queryHandler<IHistory[]>(historyUrls);
-    const itemGen2Raw = addHistoryToItems(itemGen1, historyResponses);
+    const itemGen2Raw = addHistoryToItems(
+        itemGen1,
+        historyResponses,
+        activeSettings.time,
+    );
+
     const itemGen2: INumObj[] = itemGen2Raw.filter(
         (item): item is INumObj => item !== null,
     );
@@ -73,10 +85,10 @@ export async function executeGetData(
 
     if (itemGen3.length === 0) return [];
 
-    // 6. ОБОГАЩЕНИЕ СТАТИЧЕСКИМИ ИМЕНАМИ: Стягиваем имена только для прибыльных позиций (ROI > 0)
+    // 6. ОБОГАЩЕНИЕ СТАТИЧЕСКИМИ ИМЕНАМИ: Передаем тип IInfo без массивов (Фикс ошибки 3)
     const infoUrls: string[] = urlsConstructor.info(itemGen3);
-    const infoResponses = await queryHandler<IInfo[]>(infoUrls);
-    const itemGen4Raw = addInfoToItem(itemGen3, infoResponses.flat());
+    const infoResponses = await queryHandler<IInfo>(infoUrls);
+    const itemGen4Raw = addInfoToItem(itemGen3, infoResponses);
 
     // Переводим через safe cast в unknown -> IMarketItem[] для строгой типизации вывода
     const itemGen4 = itemGen4Raw as unknown as IMarketItem[];
