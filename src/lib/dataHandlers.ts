@@ -141,3 +141,27 @@ export function addInfoToItem(
         return items;
     }
 }
+
+export interface IWarMarketPrices {
+    maxBuyPrice: number;
+    minSellPrice: number;
+}
+
+/**
+ * Находит самую высокую цену на покупку и самую низкую на продажу
+ */
+export function warHandler(orders: IOrder[]): IWarMarketPrices {
+    const buyOrders = orders.filter((o) => o.is_buy_order);
+    const sellOrders = orders.filter((o) => !o.is_buy_order);
+
+    return {
+        maxBuyPrice:
+            buyOrders.length > 0
+                ? Math.max(...buyOrders.map((o) => o.price))
+                : 0,
+        minSellPrice:
+            sellOrders.length > 0
+                ? Math.min(...sellOrders.map((o) => o.price))
+                : 0,
+    };
+}

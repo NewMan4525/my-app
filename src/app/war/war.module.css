@@ -1,0 +1,291 @@
+/* ./src/app/war/war.module.css */
+
+.warPageSection {
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+.itemName {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.uploadCard {
+    background-color: #11141a;
+    border: 1px solid #2c3545;
+    padding: 20px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.uploadCard h3 {
+    margin: 0 0 16px 0;
+    color: #ffffff;
+    font-size: 1.1rem;
+}
+
+/* Конструктор пути со встроенным инпутом */
+.pathBuilderRow {
+    display: flex;
+    align-items: center;
+    background-color: #161b24;
+    padding: 8px 12px;
+    border-radius: 2px;
+    border: 1px dashed #232d3d;
+    font-size: 12px;
+    width: 100%;
+    max-width: fit-content;
+}
+
+.pathText {
+    color: #8899a6;
+    white-space: pre;
+}
+
+.inlineUserInput {
+    background: #202632;
+    border: 1px solid #3d4b63;
+    color: #ffaa00;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 2px;
+    width: 110px;
+    text-align: center;
+}
+
+.inlineUserInput:focus {
+    outline: none;
+    border-color: #5599ff;
+    background: #1c2330;
+}
+
+.inlineCopyBtn {
+    background: none;
+    border: none;
+    color: #5599ff;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 12px;
+    margin-left: 16px;
+    padding: 0 4px;
+    transition: color 0.1s ease;
+}
+
+.inlineCopyBtn:hover {
+    color: #ffffff;
+}
+
+.actionRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fileInput {
+    background: #161b24;
+    border: 1px solid #3d4b63;
+    padding: 6px 10px;
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 0.85rem;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.fileInput:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.uploadBtn {
+    background-color: #2a364d;
+    border: 1px solid #5599ff;
+    color: #ffffff;
+    font-family: monospace;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.uploadBtn:hover:not(:disabled) {
+    background-color: #3b4e70;
+}
+
+.uploadBtn:disabled {
+    opacity: 0.4;
+    border-color: #3d4b63;
+    cursor: not-allowed;
+}
+
+/* Стили заголовков таблиц ордеров */
+.tableHeading {
+    font-family: monospace;
+    font-size: 13px;
+    color: #8899a6;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Контейнеры ячеек цен */
+.priceCellContainer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.priceValue {
+    font-family: monospace;
+}
+
+/* Кнопка [Copy] */
+.copyBtn {
+    font-size: 11px;
+    padding: 0px 2px;
+    opacity: 0.5;
+    background: none;
+    border: none;
+    color: #5599ff;
+    cursor: pointer;
+    font-family: inherit;
+    transition:
+        transform 0.1s ease,
+        color 0.1s ease;
+}
+
+.copyBtn:hover {
+    opacity: 1;
+    color: #ffffff;
+}
+
+/* Анимация и цвет успешного копирования */
+.copyBtnCopied {
+    color: #00ff88 !important;
+    transform: scale(1.1);
+    opacity: 1 !important;
+}
+
+/* Красный алерт для перебитых позиций */
+.changedAlert {
+    color: var(--negative, #ff4444);
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background-color: rgba(255, 68, 68, 0.1);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 68, 68, 0.2);
+    display: inline-block;
+}
+.radarBtn {
+    background-color: #1c2430;
+    border: 1px solid #3d4b63;
+    color: #8899a6;
+    font-family: monospace;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.radarBtn:hover {
+    border-color: #5599ff;
+    color: #ffffff;
+}
+
+/* Зеленое светящееся состояние работающего чекера */
+.radarActive {
+    background-color: rgba(0, 255, 136, 0.05) !important;
+    border-color: #00ff88 !important;
+    color: #00ff88 !important;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    animation: radarPulse 2s infinite ease-in-out;
+}
+
+@keyframes radarPulse {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    }
+}
+/* Кнопка-алерт CHANGED (активное состояние) */
+.changedAlertBtn {
+    color: var(--negative, #ff4444);
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background-color: rgba(255, 68, 68, 0.1);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 68, 68, 0.2);
+    cursor: pointer;
+    font-family: monospace;
+    transition: background-color 0.1s ease;
+}
+
+.changedAlertBtn:hover {
+    background-color: rgba(255, 68, 68, 0.2);
+}
+
+/* Синяя кнопка-заглушка IGNORED для проигнорированных алертов */
+.ignoredBadge {
+    color: #5599ff; /* Синий цвет в стиле --primary-text */
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background-color: rgba(85, 153, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(85, 153, 255, 0.15);
+    cursor: pointer;
+    font-family: monospace;
+    transition: background-color 0.1s ease;
+}
+
+.ignoredBadge:hover {
+    background-color: rgba(85, 153, 255, 0.15);
+}
+/* Контейнер управления внутри ячейки changed */
+.statusControlGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Космический стильный чекбокс EVE Online */
+.warCheckbox {
+    width: 14px;
+    height: 14px;
+    accent-color: #00ff88;
+    cursor: pointer;
+    border: 1px solid #3d4b63;
+    background-color: #11141a;
+}
+
+/* Приглушенная кнопка выполненного ордера (синий цвет текста) */
+.checkedMutedBadge {
+    color: #8899a6;
+    font-weight: normal;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background-color: rgba(136, 153, 166, 0.05);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(136, 153, 166, 0.15);
+    font-family: monospace;
+    cursor: not-allowed;
+    opacity: 0.6;
+}

@@ -1,6 +1,6 @@
 // ./src/app/api/buy/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGetData } from '@/src/lib/execute';
+import { executeGetData } from '@/src/services/execute';
 import {
     tradeSettings as defaultTradeSettings,
     userStats as defaultUserStats,

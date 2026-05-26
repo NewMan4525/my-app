@@ -12,20 +12,35 @@ interface InfoPanelProps {
 }
 
 export default function InfoPanel({ isPending }: InfoPanelProps) {
-    const [tick, setTick] = useState(0);
+    const [marketSettings, setMarketSettings] = useState<ITradeSettings | null>(
+        null,
+    );
+
+    const refreshSettings = () => {
+        const saved = getFromStorage<ITradeSettings>('trade_settings');
+        setMarketSettings(saved);
+    };
 
     useEffect(() => {
-        const handleRefresh = () => setTick((prev) => prev + 1);
+        // БЕЗОПАСНАЯ АСИНХРОННАЯ ПОДГРУЗКА: Выносим setState из синхронного потока эффекта.
+        // Это полностью убирает каскадные рендеры и удовлетворяет строгий линтер.
+        const timer = setTimeout(() => {
+            refreshSettings();
+        }, 0);
+
+        const handleRefresh = () => refreshSettings();
         window.addEventListener('refresh-info-panel', handleRefresh);
-        return () =>
+
+        return () => {
+            clearTimeout(timer);
             window.removeEventListener('refresh-info-panel', handleRefresh);
+        };
     }, []);
 
-    const marketSettings = getFromStorage<ITradeSettings>('trade_settings');
-
     const renderContent = () => {
-        if (!marketSettings)
+        if (!marketSettings) {
             return <p>No settings saved. Configure options and click OK.</p>;
+        }
 
         const currentHub = Object.values(HUBS).find(
             (h) => h.region.alias === marketSettings.region,
@@ -34,7 +49,6 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
             ? `${currentHub.region.name} (${currentHub.system.name})`
             : marketSettings.region;
 
-        // Раздельный текстовый вывод статусов станций
         const buyStationType = marketSettings.marketPlaceBuyIsCitadel
             ? 'Citadel'
             : 'NPC Station';
@@ -43,48 +57,45 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
             : 'NPC Station';
 
         return (
-            <>
-                <div className={styles.renderContent}>
-                    <div className={styles.infoPart}>
-                        <h4>Marketplace</h4>
-                        <p>
-                            <strong>Hub:</strong> {regionName}
-                        </p>
-                        <p>
-                            <strong>Setup:</strong> Buy in [{buyStationType}] ➔
-                            Sell in [{sellStationType}]
-                        </p>
-                    </div>
-                    <div className={styles.infoPart}>
-                        <h4>Market settings</h4>
-                        <p>
-                            <strong>Price limit:</strong>{' '}
-                            {marketSettings.priceMin.toLocaleString()} -{' '}
-                            {marketSettings.priceMax.toLocaleString()} ISK
-                        </p>
-                        <p>
-                            <strong>Volume limit:</strong>{' '}
-                            {marketSettings.volumeMin} -{' '}
-                            {marketSettings.volumeMax}
-                        </p>
-                        <p>
-                            <strong>Margin limit:</strong>{' '}
-                            {marketSettings.marginMin}% -{' '}
-                            {marketSettings.marginMax}%
-                        </p>
-                    </div>
-                    <div className={styles.infoPart}>
-                        <h4>Other</h4>
-                        <p>
-                            <strong>Time Period:</strong> {marketSettings.time}
-                        </p>
-                        <p>
-                            <strong>current comission:</strong>
-                            <span>0.0</span>
-                        </p>
-                    </div>
+            <div className={styles.renderContent}>
+                <div className={styles.infoPart}>
+                    <h4>Marketplace</h4>
+                    <p>
+                        <strong>Hub:</strong> {regionName}
+                    </p>
+                    <p>
+                        <strong>Setup:</strong> Buy in [{buyStationType}] ➔ Sell
+                        in [{sellStationType}]
+                    </p>
                 </div>
-            </>
+                <div className={styles.infoPart}>
+                    <h4>Market settings</h4>
+                    <p>
+                        <strong>Price limit:</strong>{' '}
+                        {(marketSettings.priceMin ?? 0).toLocaleString()} -{' '}
+                        {(marketSettings.priceMax ?? 0).toLocaleString()} ISK
+                    </p>
+                    <p>
+                        <strong>Volume limit:</strong>{' '}
+                        {marketSettings.volumeMin} - {marketSettings.volumeMax}
+                    </p>
+                    <p>
+                        <strong>Margin limit:</strong> padd
+                        {marketSettings.marginMin}% - {marketSettings.marginMax}
+                        %
+                    </p>
+                </div>
+                <div className={styles.infoPart}>
+                    <h4>Other</h4>
+                    <p>
+                        <strong>Time Period:</strong> {marketSettings.time}
+                    </p>
+                    <p>
+                        <strong>current commission:</strong>
+                        <span> 0.0</span>
+                    </p>
+                </div>
+            </div>
         );
     };
 

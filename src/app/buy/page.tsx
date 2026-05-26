@@ -132,7 +132,23 @@ export default function Buy() {
             header: 'sell',
             sortable: true,
             sortPath: 'sell',
-            render: (item) => item.sell.toLocaleString(),
+            render: (item) => (
+                <>
+                    <button
+                        type="button"
+                        className={styles.copyBtn}
+                        title="Copy modified sell price (-1 step)"
+                        onClick={(e) =>
+                            executeCopy(e, item.sell.toString(), 'sell')
+                        }
+                    >
+                        [Copy]
+                    </button>
+                    <span style={{ marginLeft: '6px' }}>
+                        {item.sell.toLocaleString()}
+                    </span>
+                </>
+            ),
         },
         {
             key: 'roi',
@@ -248,20 +264,12 @@ export default function Buy() {
                 </div>
             </Overview>
 
-            <div className={`${styles.container} container`}>
-                {isPending && (
-                    <div className={styles.loadingOverlay}>
-                        Loading Server HTML...
-                    </div>
-                )}
-                {!isOptionsVisible && <InfoPanelNoSSR isPending={isPending} />}
-
-                <Table
+            <div className="container" style={{ marginTop: '20px' }}>
+                <Table<IMarketItem>
                     items={marketItems}
                     columns={buyColumns}
-                    rowKey="type_id"
+                    rowKey="name"
                     isPending={isPending}
-                    emptyMessage="📊 No data loaded. Configure settings and click 'Get Data'."
                 />
             </div>
         </section>

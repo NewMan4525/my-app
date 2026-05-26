@@ -140,7 +140,7 @@ export default function Table<T>({
                                                     ? sortDirection === 'asc'
                                                         ? '▲'
                                                         : '▼'
-                                                    : '⬍'}
+                                                    : '⥮'}
                                             </span>
                                         )}
                                     </th>
@@ -190,7 +190,7 @@ export default function Table<T>({
                                     className={styles.emptyCell}
                                 >
                                     {isPending
-                                        ? '🤖 Loading data from server...'
+                                        ? 'Loading data from server...'
                                         : emptyMessage}
                                 </td>
                             </tr>

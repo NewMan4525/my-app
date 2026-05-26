@@ -4,9 +4,7 @@ import { INumObj } from '@/src/types/interfaces';
 
 export const urlsConstructor = {
     orders(currentReghionId: number, quantity: number): string[] {
-        // Кешируем общую часть URL для производительности и чистоты
         const madeUrl = `${BASE_URL}markets/${currentReghionId}/orders?order_type=all`;
-        // Создаем массив нужной длины и заполняем его через Array.from
         return Array.from(
             { length: quantity },
             (_, i) => `${madeUrl}&page=${i + 1}`,
@@ -14,7 +12,6 @@ export const urlsConstructor = {
     },
     history(items: INumObj[], currentReghionId: number): string[] {
         const madeUrl = `${BASE_URL}markets/${currentReghionId}/history?type_id=`;
-        // return items.map((item) => madeUrl + item.type_id);
         return Array.from(
             { length: items.length },
             (_, i) => madeUrl + items[i].type_id,
@@ -26,8 +23,14 @@ export const urlsConstructor = {
             { length: items.length },
             (_, i) => madeUrl + items[i].type_id,
         );
-        // return items.map(
-        //   (item) => `${BASE_URL}latest/universe/types/${item.type_id}`,
-        // );
+    },
+    // Улучшенный метод: теперь принимает точный тип ордера (buy/sell) и номер страницы
+    warOrders(
+        currentRegionId: number,
+        typeId: number,
+        orderType: 'buy' | 'sell',
+        page: number = 1,
+    ): string {
+        return `${BASE_URL}markets/${currentRegionId}/orders?order_type=${orderType}&page=${page}&type_id=${typeId}`;
     },
 };
