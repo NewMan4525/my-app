@@ -135,3 +135,27 @@ export interface IMarketItem {
     ipm: number;
     type_id: number;
 }
+export interface IMyUploadedOrder {
+    orderID: string;
+    typeID: number;
+    solarSystemID: string;
+    stationID: string;
+    stationName: string;
+    range: string;
+    bid: boolean;
+    price: number;
+    volRemaining: number;
+    regionID: string;
+}
+
+export interface IWarItem {
+    name: string;
+    vol: number;
+    buy: number;
+    sell: number;
+    roi: number;
+    ipm: number;
+    orderID: string;
+    status: 'OUTBID' | 'IGNORED' | '';
+    isBuy: boolean; // <-- Добавляем строгое разделение по типу
+}

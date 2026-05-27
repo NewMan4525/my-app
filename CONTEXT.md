@@ -1,118 +1,88 @@
-# === КОНТЕКСТ ПРОЕКТА: ISK MASTER (NEXT.JS APP ROUTER + TYPESCRIPT) ===
+# CONTEXT: ISK MASTER (NEXT.JS 16 + TS)
 
-## 1. СУТЬ И АРХИТЕКТУРА ПРОЕКТА
+## 🎯 ROLE & MODE
 
-- Фронтенд торгового симулятора / калькулятора вселенной EVE Online на базе React 19.2.4 и Next.js 16.2.4.
-- Строгий принцип Multi-Page Application (MPA). Смена страниц полностью сбрасывает стейт React в памяти.
-- Логика работы: Пользователь настраивает параметры в формах, нажимает кнопку "OK" (сохранение в LocalStorage). По кнопке "Get Data" клиент собирает объекты настроек (trade_settings, user_stats, user_skills) и отправляет их на сервер POST-запросом в формате JSON (/api/buy).
-- Динамики и реактивности "на лету" после получения данных на клиенте нет (кроме темы, сортировки и выделения строк таблицы). Сервер возвращает полностью готовый массив просчитанных данных для таблицы ордеров (тип IMarketItem).
-- Жесткие правила линтинга (strict: true): ПОЛНОСТЬЮ ЗАПРЕЩЕН тип "any" (строгая типизация интерфейсов), ЗАПРЕЩЕН синхронный "setState" внутри "useEffect" во избежание каскадных рендеров и ошибок гидратации.
-- Исключены нативные блокирующие уведомления "alert". Все ошибки логируются через console.error.
+Senior Next.js/TS Developer. Output code: production-ready, ultra-optimized, NO placeholders (NO `// TODO`). Response language: Russian.
 
-## 2. СТРУКТУРА ДИРЕКТОРИИ /src/
+## 💻 STACK
 
-src/
-├── app/
-│ ├── layout.tsx # Корневой шаблон приложения (включает Header)
-│ ├── globals.css # Глобальные стили (CSS-переменные тем :root)
-│ ├── user/
-│ │ └── page.tsx # Страница User (динамический импорт userForm с ssr: false)
-│ ├── buy/
-│ │ ├── page.tsx # Страница Buy (управление оверлеем, fetch POST, конфигурация колонок, сессионный кэш)
-│ │ └── buy.module.css # Стили страницы Buy (кнопки копирования, статусы)
-│ ├── war/
-│ │ ├── page.tsx # [ДОБАВЛЕН] Страница 0.01 ISK War (Две таблицы ордеров, Web Workers таймеры, галочки DONE)
-│ │ └── war.module.css # [ДОБАВЛЕН] Изолированные стили страницы War (Анимация радара, подсветка CHANGED/IGNORED)
-│ └── api/
-│ ├── buy/
-│ │ └── route.ts # Обработчик POST, глубокий мёрдж входящего JSON и запуск executeGetData
-│ └── war/
-│ └── route.ts # [ДОБАВЛЕН] Обработчик POST (Прием текстовых логов из ОЗУ-буфера в формате JSON)
-├── components-feature/
-│ ├── header.tsx # Шапка сайта с навигацией (Добавлена вкладка "0.01 isk war") и кнопкой Options
-│ ├── inputsBlock.tsx # Блок-распределитель, маппит пропсы в UI-инпуты (обработка radio групп)
-│ ├── optionsBar.tsx # Панель настройки рынка (формы ввода, раздельные маркетплейсы)
-│ ├── infoPanel.tsx # Панель верификации данных, исправлена под React 19 (безопасный асинхронный useEffect)
-│ ├── userForm.tsx # Изолированная форма скиллов и стендингов, парсит localStorage на клиенте
-│ └── css/ # Изолированные стили для фич (header.module.css, info_panel.module.css...)
-├── components-generic/
-│ ├── table.tsx # Универсальная Table<T> (сортировка, Windows-style Ctrl/Shift выделение, userSelect: none)
-│ ├── overview.tsx # Абсолютный оверлей-конвейер, управляет visibility через display: none
-│ ├── button.tsx # Обычная кнопка
-│ ├── inputButton.tsx # Инпут типа button
-│ ├── inputNumber.tsx # Числовой контролируемый инпут
-│ ├── inputRadio.tsx # Группа радио-кнопок (раздельные имена групп)
-│ ├── inputReset.tsx # Кнопка сброса (Cancel)
-│ ├── inputSubmit.tsx # Кнопка отправки формы (OK)
-│ ├── inputText.tsx # Текстовый инпут
-│ ├── link.tsx # Общая ссылка через нативный тег a
-│ └── css/ # Стили базовых компонентов (table.module.css с кастомной сеткой EVE)
-├── db/
-│ └── esi_cache.db # Локальное хранилище SQLite кэша ESI API (WAL-режим)
-├── lib/
-│ ├── constants.ts # Объект HUBS (данные Jita, Amarr и др.), BASE_URL, TIME (в ms)
-│ ├── settings.ts # Дефолтные объекты настроек: tradeSettings, userStats, userSkills
-│ ├── dbHandlers.ts # Менеджер SQLite (better-sqlite3) с единым постоянным соединением в режиме WAL
-│ ├── filtres.ts # Функции фильтрации рынка (priceFilter, marginFilter, volFilter, ordersFilter)
-│ ├── dataHandlers.ts # Модифицирован: добавлена функция warHandler для точечного расчета экстремумов цен ордеров
-│ └── profitCalculations.ts # Модифицирован: расчет чистой прибыли с налогами патча Viridian (SCC 0.5%, минимумы 25/100 ISK)
-├── services/
-│ ├── execute.ts # [ПЕРЕЕХАЛ] Серверный MPA-конвейер вычислений (запросы к ESI API через queryHandler)
-│ └── warExecuter.ts # [ДОБАВЛЕН] Движок 0.01 ISK War (Сравнение по orderID, 1 прыжок, авто-игнор "своих" ордеров)
-├── types/
-│ ├── frontInterfaces.ts # Клиентские UI типы (IInputProps, IUserSkills). Имя строго в camelCase!
-│ └── interfaces.ts # Серверные типы, расширен тип IWarItem (Добавлено строгое поле orderID)
-└── utils/
-├── storage.ts # Работа с localStorage и sessionStorage (кэш таблицы cached_market_items)
-├── classes.ts # Класс InputsBlockOptionCreator (билдер пропсов инпутов с сохранением индексов)
-└── clipboardModify.ts # Алгоритм "правила 4 значащих цифр" EVE Online для модификации цен перед копированием
+- Core: Next.js 16.2.4 (App Router), React 19.2.4, TypeScript 5 (strict: true)
+- DB: better-sqlite3 (Node.js, local, synchronous, WAL-mode, single persistent connection)
+- Styling: Tailwind CSS v4 (@tailwindcss/postcss), CSS Modules (`.module.css`)
+- Async Control: `p-limit`
+- ESLint: Flat Config (`eslint.config.mjs`) with nextVitals & nextTs.
 
-## 3. ТЕКУЩИЙ СТАТУС И РЕАЛИЗОВАННЫЙ ФУНКЦИОНАЛ
+## 🏛️ ARCHITECTURE & DATA FLOW
 
-- **Изоляция бэкенда и общий кэш:** База данных SQLite хранит 100% сырые ответы от ESI API (ордера региона — 5 мин, история — 24 ч) по заголовкам Expires/ETag. Пользовательская фильтрация изолирована и выполняется в ОЗУ в самом конце конвейера.
-- **Универсальный queryHandler:** Функция возвращает полный массив результатов `(T | null)[]`, строго сохраняя исходную длину и порядок переданных URL. Любые ошибки сети и блокировки 404 возвращают `null` вместо удаления элементов, что полностью исключает сдвиг индексов и рассинхронизацию данных. Фильтрация и обработка `null` происходит на вызывающей стороне конвейера.
-- **Математика игровой экономики EVE Online:** В `profitCalculations.ts` базовый Sales Tax равен **7.5%**, снижаясь навыком _Accounting_. Комиссия NPC-брокера (база **3.0%**) снижается за счет _Broker Relations_ и чистых стендингов (Unmodified Standings). Внедрен расчет минимального брокерского сбора: если процентная комиссия меньше 100 ISK, принудительно списывается **100 ISK** (`Math.max(percentageFee, 100)`). Для устранения погрешностей float в JS применяется пошаговое округление `Math.round(val * 100) / 100`.
-- **Защита от Hydration Error без useEffect:** Использование динамического импорта `{ ssr: false }` для `UserForm` и `OptionsBar` позволяет лениво парсить `localStorage` напрямую при инициализации стейта. На странице `/buy` подгрузка `sessionStorage` вынесена в асинхронный `setTimeout(..., 0)` внутри `useEffect`, что полностью предотвращает ошибки Hydration Mismatch в React 19.
-- **Сессионное кэширование таблицы:** Массив готовых данных от сервера (`IMarketItem[]`) при POST-запросе пишется в `sessionStorage` под ключом `cached_market_items`. Таблица восстанавливается мгновенно за 0 мс при навигации между страницами в рамках одной вкладки.
-- **Универсальная таблица Table<T>:** Поддерживает Windows-механику множественного выделения строк (`Ctrl` / `Shift`) на основе массива `sortedItems`. Синее выделение текста заблокировано через `e.preventDefault()` для Shift и `userSelect: 'none'`. Кнопки `[Copy]` изолированы через `e.stopPropagation()` и меняют текст на `[Copied]` через прямую модификацию DOM без лишних рендеров таблицы.
+- MPA Principle: Page navigation fully resets React state. NO global heavy reactive states.
+- Client Flow: Forms -> LocalStorage (on "OK") -> GET DATA (button) -> POST JSON to `/api/buy` -> Server returns flat `IMarketItem[]` -> Render static table.
+- Client Interaction: ONLY theme toggle, table sorting, and row selection.
+- Routing: Paths use `@/*` alias (from root `./`). NO relative paths like `../../`.
+- Navigation: Use native `<a>` tags instead of Next.js `<Link>`.
 
-## 4. ИНСТРУКЦИИ ДЛЯ ИИ ПРИ ФОРМИРОВАНИИ ОТВЕТОВ
+## ⛔ CRITICAL CODE RULES (STRICT)
 
-При возвращении кода в начале каждого файла ИИ ОБЯЗАН на самой первой строчке писать закомментированный относительный путь к файлу в следующем формате:
+1. NO `any` type allowed. Strict interfaces only.
+2. NO `setState` inside `useEffect` (prevents cascade renders & hydration errors).
+3. NO native `alert()`. Use `console.error` for logs.
+4. IMMUTABILITY: Never mutate pipeline input configs or intermediate states.
+5. FILE HEADER MANDATORY: Every code block MUST start on line 1 with its path.
 
-- `// ./src/path/to/file.ts` — для файлов `.js`, `.ts`, `.tsx`
-- `/* ./src/path/to/file.css */` — для CSS-модулей и файлов `.css`
+## ⚙️ ENGINE & LOGIC RULES
 
-Любые изменения кода должны строго следовать правилам TypeScript `strict: true` (тип `any` полностью запрещен), не мутировать входящие настройки в конвейере, и сохранять иммутабельность промежуточных состояний.
+- **queryHandler:** Returns `(T | null)[]`. MUST preserve original array length and exact URL indices. Replace network/404 errors with `null`. Filter `null` on the caller side.
+- **ESI Cache:** DB stores 100% raw ESI API responses (Orders: 5 min, History: 24h) via Expires/ETag headers. User filtering is done in RAM at the very end of the pipeline.
+- **EVE Economy Math (`profitCalculations.ts`) [Viridian 2026 Update]:**
+    - Sales Tax: Base 7.5%. Formula: `Base * (1 - 0.11 * AccountingLevel)`. Forge Hub Max Skill Fix: strict 3.375%.
+    - Upwell Structures (Citadels): SCC Surcharge strict 0.5% (MIN: 25 ISK per order). Owner Fee: applies directly (Ignore _Broker Relations_ skill), strict MIN: 100 ISK per order.
+    - NPC Stations (Jita 4-4): Broker Fee uses Unmodified Standings (Faction & Corp) BEFORE social skills apply. Strict MIN: 100 ISK per order.
+    - Formula Constraints: Apply `Math.max(calculatedFee, minThreshold)` for all minimums.
+    - Float Precision Fix: Use `Math.round(val * 100) / 100` step-by-step.
+- **EVE UI Utilities:**
+    - Prices: Apply "4 significant digits rule" via `clipboardModify.ts` before copying.
+    - Table Copy Buttons: Stop propagation (`e.stopPropagation()`). Change text to `[Copied]` via direct DOM mutation (`target.innerText`) to avoid table re-renders.
 
-# CONTEXT.md — Лог изменений проекта ISK Master
+## ⚡ PERFORMANCE & HYDRATION FIXES
 
-## 📝 Статус коммита: Релиз модуля 0.01 ISK War Analyzer и фикс формул комиссий
+- **Anti-Hydration Mismatch:**
+    - For `UserForm` / `OptionsBar`: Use dynamic import `{ ssr: false }` and parse `localStorage` directly during state init.
+    - For `/buy` (sessionStorage): Wrap inside `setTimeout(..., 0)` inside `useEffect`.
+- **Session Cache:** Save server response `IMarketItem[]` to `sessionStorage` (`cached_market_items`) for instant 0ms restoration on tab navigation.
+- **Table Selection:** Windows-style multi-select (`Ctrl` / `Shift`) based on `sortedItems`. Block text selection on Shift via `e.preventDefault()` and `userSelect: 'none'`.
 
-### 1. ⚖️ Модуль расчета прибыли и комиссий (`src/lib/profitCalculations.ts`)
+## 🛰️ WEB WORKER RADAR SPEC (`src/app/war/`)
 
-- **Синхронизация с патчем Viridian (2026):** Логика расчетов полностью приведена в соответствие с актуальной механикой EVE Online на основе внутриигровых логов.
-- **Сборы в цитаделях (Upwell Structures):** Фиксированная пошлина КлТБ (SCC Surcharge) установлена в размере строго **0.5%** от суммы сделки с жестким скрытым минимумом в **25 ISK** на ордер. Комиссия владельца цитадели применяется без влияния навыка _Broker Relations_, но имеет абсолютный минимум в **100 ISK** на ордер.
-- **NPC-станции (Jita 4-4):** Формула брокерского сбора учитывает чистые (Unmodified) стендинги к Фракции и Корпорации-владельцу до применения социальных навыков. Минимальный порог в **100 ISK** применяется строго к каждому ордеру.
-- **Налог с продаж (Sales Tax):** Базовая ставка 7.5% уменьшается навыком _Accounting_ на 11% от базы за уровень. Добавлена региональная поправка для хаба The Forge (3.375% на 5-м уровне навыка).
+- Anti-Throttling (Chromium Fix): ALL scan/blink timers MUST live inside isolated Web Workers created dynamically via `Blob URL`. NO native `setInterval` in React components.
+- Auto-Scan Pipeline: Worker triggers every 5m 05s (safe window for CCP Games ESI cache reset). Automatically sends cached JSON log to backend via POST. NO manual file re-upload required.
+- OS-Level Notification (Tab Blinking): If orders are outbid, worker modifies `document.title` every 1s, toggling between `🔴 0.01 ISK WAR` and `ISK Master`. MUST bypass browser sleep mode.
 
-### 2. ⚔️ Страница анализа ценовых войн (`src/app/war/page.tsx`)
+## ⚔️ WAR PAGE SPEC (`src/app/war/page.tsx`)
 
-- **Интерфейс «Две таблицы»:** Результаты анализа рынка разделены на две независимые таблицы — **SELL ORDERS** и **BUY ORDERS** в точном соответствии с торговым терминалом игры. Состав колонок сокращен строго до трех: `changed`, `buy`/`sell` и `Item Name`.
-- **Интерактивные кнопки копирования:** Внедрены кнопки быстрого копирования `[Copy]` для цен с автоматической модификацией шага ордера (`+0.01 ISK` для бай-ордеров и `-0.01 ISK` для селл-ордеров), а также кнопка мгновенного копирования чистого имени предмета для вставки в игровой маркет-поиск.
-- **Система умного игнорирования (White List):** Кнопка `CHANGED` при клике переключается в синий статус `IGNORED`. Это позволяет временно «заглушить» алерты по нерентабельным позициям.
-- **Чекбоксы готовности ордера:** Добавлена колонка `changed` с нативными чекбоксами `[✔ Check]`. При отметке ордера как перевыставленного (`DONE`) его алерт визуально гаснет, исключая строку из подсчета угроз до следующего цикла сканирования.
-- **Интерактивный хелпер путей Windows:** На экране выведен нативный текстовый инпут для динамического ввода имени пользователя ПК, формирующий точный шорткат к папке экспорта логов игры (`C:\Users\{User}\Documents\EVE\logs\Marketlogs`) с кнопкой быстрого копирования пути.
+- UI Layout: Dual independent tables (SELL ORDERS / BUY ORDERS). Strict 3-column grid: `changed` | `buy/sell` | `Item Name`. Separated strictly by `item.isBuy` flag.
+- Quick Actions:
+    - `[Copy]` Price: Auto-applies price step modify (+0.01 ISK for Buy, -0.01 ISK for Sell) via direct float calculations in text utils.
+    - `[Copy]` Name: Copies raw Item Name text for in-game market search field.
+- Row States (DOM only, NO heavy state / NO reactive arrays):
+    - `changed` column: Native checkboxes `[✔ Check]`. If checked (`DONE`), visual opacity fades to `0.35` via direct DOM-mutation to avoid table re-renders.
+    - Interaction: `OUTBID` and `IGNORED` buttons trigger cyclic DOM innerText swap at 0ms latency. If `item.status` is empty (`''`), native CSS pseudo-class `:empty` mutes border and background, making it completely invisible without breaking grid alignment.
+- Path Helper: Native text input for Windows PC Username. Dynamically renders path: `C:\Users\{User}\Documents\EVE\logs\Marketlogs`. Includes single-click copy button.
 
-### 3. 🛰️ Фоновый сканер-радар на Web Workers
+## ⚙️ SERVER WAR ENGINE SPEC (`src/services/warExecuter.ts` & `/api/war`)
 
-- **Обход Tab Throttling в Chromium (Механика Avito/Mail.ru):** Для борьбы с принудительным «засыпанием» фоновых вкладок в Chrome, таймеры полностью вынесены из React в изолированные системные потоки **Web Workers**, создаваемые на лету через `Blob URL`.
-- **Авто-сканирование кэша ESI:** Воркер с частотой **5 минут и 5 секунд** (безопасный зазор для гарантированного сброса кэша на серверах CCP Games) отправляет JSON-текст лога на бэкенд без необходимости повторного бинарного выбора файла в инпуте.
-- **Фоновое мигание вкладки:** При обнаружении перебитых ордеров воркер мигания каждую секунду принудительно переключает `document.title` между `🔴 0.01 ISK WAR` и `ISK Master`. Метод работает на уровне ОС и пробивает «сон» вкладки, даже если пользователь часами смотрит YouTube.
+- **EVE Geography Logic:** Filter competitors via `getNeighborSystems` & `jumpFilter`. Sell Orders compete strictly inside the exact station. Buy Orders compete within order's active `Range` radius from game client log.
+- **Strict Atomics (Order ID Match):** Pipeline completely avoids any type grouping (`Set<number>`). It generates granular parallel market request chains matching compound `typeID-orderType` metadata.
+- **Self-Order Protection:** Pipeline loops over every individual `IMyUploadedOrder` mapping top market depth rows against unique `myOrder.orderID`. If the top order belongs to the user, status evaluates to empty `''` to prevent false positive triggers on overlapping assets.
+- **Order Depth Muting (Auto-Ignore Hierarchy):** Group and sort internal player stacks by price extrema. Highest buy order and lowest sell order become flags. Deeper duplicate user orders of the same type automatically inherit `status: 'IGNORED'` from engine context to shield user from self-undercut alarms.
+- **Data Integrity:** Item names MUST be raw strings from the game DB SDE. NO custom suffixes or text modifications allowed.
 
-### 4. ⚙️ Серверный MPA-конвейер (`src/services/warExecuter.ts` & `/api/war`)
+## 📂 DIRECTORY MAP REFERENCE
 
-- **Точечный опрос ESI API:** Метод `urlsConstructor.warOrders` оптимизирован для генерации URL с фильтрацией по конкретным страницам и `type_id`. Сервер качает только данные по 25 вашим предметам, не забивая лимиты ESI.
-- **Географическая фильтрация в 1 прыжок:** Конкуренты фильтруются с помощью функций `getNeighborSystems` и `jumpFilter`. Sell-ордера конкурируют строго внутри конкретной станции дислокации, а Buy-ордера учитывают радиус действия `Range` из соседних систем.
-- **Связывание по уникальному Order ID:** Конвейер полностью избавлен от ложных срабатываний на спаренных ордерах (когда у вас выставлено несколько пачек одного товара). Бэкенд вычисляет ваши ордера в стакане по `order_id` и, если на вершине стакана стоит ваша же позиция, она распознается как «своя», автоматически выставляя статус `👑 TOP_1`.
-- **Чистота данных:** Названия предметов выводятся в оригинальном строгом виде из базы данных игры без каких-либо искусственных суффиксов.
+- `src/app/`: `layout.tsx` (with Header), `globals.css` (themes), `user/` (dynamic form), `buy/` (fetch & cache), `war/` (`page.tsx` isolated logic, `columnsConfig.tsx` cell renderers, `war.module.css`), `api/` (buy/war POST handlers, JSON merge).
+- `src/components-feature/`: Business logic forms & bars (`header.tsx` with war tab, `inputsBlock.tsx` for radio, `optionsBar.tsx`, `infoPanel.tsx` with async React 19 useEffect, `userForm.tsx`). CSS in `css/`.
+- `src/components-generic/`: Pure UI atomic components (`table.tsx` with custom EVE grid supporting `rowKey="orderID"` mapping, `overview.tsx` absolute overlay, inputs, buttons). CSS in `css/`.
+- `src/db/`: `esi_cache.db` (SQLite file).
+- `src/lib/`: `constants.ts` (HUBS, timers), `settings.ts` (defaults), `dbHandlers.ts` (WAL manager), `filtres.ts` (RAM filters), `warUtils.ts` (CSV parser, hierarchical stack indexer), `profitCalculations.ts` (Viridian patch taxes).
+- `src/services/`: `execute.ts` (Server MPA pipeline), `warExecuter.ts` (0.01 ISK atomic war engine, 1-jump radius filter, deep ignore sorting).
+- `src/types/`: `interfaces.ts` (Server types, native ESI data types, strict `IWarItem` literated schemas).
+
+## END CONTEXT.md

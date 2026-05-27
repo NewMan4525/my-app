@@ -221,11 +221,11 @@
         box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
     }
 }
-/* Кнопка-алерт CHANGED (активное состояние) */
+/* Кнопка-алерт OUTBID (активное состояние) */
 .changedAlertBtn {
     color: var(--negative, #ff4444);
     font-weight: bold;
-    font-size: 11px;
+    font-size: 10px; /* Уменьшено до 10px для стабильной высоты строк */
     letter-spacing: 0.5px;
     background-color: rgba(255, 68, 68, 0.1);
     padding: 2px 6px;
@@ -233,6 +233,11 @@
     border: 1px solid rgba(255, 68, 68, 0.2);
     cursor: pointer;
     font-family: monospace;
+    min-width: 75px;
+    text-align: center;
+    height: 20px;
+    line-height: 14px;
+    box-sizing: border-box;
     transition: background-color 0.1s ease;
 }
 
@@ -242,9 +247,9 @@
 
 /* Синяя кнопка-заглушка IGNORED для проигнорированных алертов */
 .ignoredBadge {
-    color: #5599ff; /* Синий цвет в стиле --primary-text */
+    color: #5599ff;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 10px; /* Уменьшено до 10px для стабильной высоты строк */
     letter-spacing: 0.5px;
     background-color: rgba(85, 153, 255, 0.05);
     padding: 2px 6px;
@@ -252,17 +257,23 @@
     border: 1px solid rgba(85, 153, 255, 0.15);
     cursor: pointer;
     font-family: monospace;
+    min-width: 75px;
+    text-align: center;
+    height: 20px;
+    line-height: 14px;
+    box-sizing: border-box;
     transition: background-color 0.1s ease;
 }
 
 .ignoredBadge:hover {
     background-color: rgba(85, 153, 255, 0.15);
 }
-/* Контейнер управления внутри ячейки changed */
+/* Базовый контейнер группы управления */
 .statusControlGroup {
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 16px; /* Фиксированная высота ячейки для защиты от прыжков верстки */
 }
 
 /* Космический стильный чекбокс EVE Online */
@@ -288,4 +299,12 @@
     font-family: monospace;
     cursor: not-allowed;
     opacity: 0.6;
+}
+.changedAlertBtn:empty,
+.ignoredBadge:empty {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    pointer-events: none;
+    cursor: default;
 }

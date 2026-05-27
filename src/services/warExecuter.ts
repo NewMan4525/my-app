@@ -1,183 +1,79 @@
 // ./src/services/warExecuter.ts
+
 import { urlsConstructor } from '@/src/lib/urlConstructors';
 import { queryHandler } from '@/src/lib/querysHandler';
 import { getNeighborSystems, jumpFilter } from '@/src/lib/location';
-import { IOrder, IInfo } from '@/src/types/interfaces';
-
-export interface IWarItem {
-    name: string;
-    vol: number;
-    buy: number;
-    sell: number;
-    roi: number;
-    ipm: number;
-    orderID: string;
-}
-
-export interface IMyUploadedOrder {
-    orderID: string;
-    typeID: number;
-    charID: string;
-    charName: string;
-    regionID: string;
-    regionName: string;
-    solarSystemID: string;
-    solarSystemName: string;
-    stationID: string;
-    stationName: string;
-    range: string;
-    bid: boolean;
-    price: number;
-    volEntered: number;
-    volRemaining: number;
-    minVolume: number;
-    issueDate: string;
-    orderState: string;
-    duration: number;
-    escrow: number;
-    isCorp: boolean;
-    accountID: string;
-    accountOwnerID: string;
-    accountKey: number;
-}
+import { IOrder, IInfo, IWarItem } from '@/src/types/interfaces';
+import { parseMarketLogCsv, buildGroupedOrdersMap } from '@/src/lib/warUtils';
+import pLimit from 'p-limit';
 
 export async function executeWarAnalysis(
     fileContent: string,
 ): Promise<IWarItem[]> {
-    const lines = fileContent.split(/\r?\n/);
-    if (lines.length < 2) return [];
+    const myParsedOrders = parseMarketLogCsv(fileContent);
+    if (myParsedOrders.length === 0) return [];
 
-    // ИСПРАВЛЕНИЕ: Берем строго нулевой (первый) элемент массива строк lines[0]
-    const headers = lines[0]
-        .split(',')
-        .map((h: string) => h.trim().toLowerCase());
+    const myOwnOrderIdsSet = new Set(myParsedOrders.map((o) => o.orderID));
+    const uniqueMarketPairsSet = new Set(
+        myParsedOrders.map((o) => `${o.typeID}-${o.bid ? 'buy' : 'sell'}`),
+    );
+    const myGroupedOrdersMap = buildGroupedOrdersMap(myParsedOrders);
 
-    const orderIDIdx = headers.indexOf('orderid');
-    const typeIDIdx = headers.indexOf('typeid');
-    const bidIdx = headers.indexOf('bid');
-    const priceIdx = headers.indexOf('price');
-    const volRemainingIdx = headers.indexOf('volremaining');
-    const regionIDIdx = headers.indexOf('regionid');
-    const solarSystemIDIdx = headers.indexOf('solarsystemid');
-    const stationIDIdx = headers.indexOf('stationid');
-    const stationNameIdx = headers.indexOf('stationname');
-
-    if (
-        typeIDIdx === -1 ||
-        bidIdx === -1 ||
-        priceIdx === -1 ||
-        orderIDIdx === -1 ||
-        stationIDIdx === -1
-    ) {
-        console.error('Critical CSV headers missing in uploaded file.');
-        return [];
-    }
-
-    const myParsedOrders: IMyUploadedOrder[] = [];
-    const uniqueTypeIds = new Set<number>();
-
-    // Наборы для быстрого ОЗУ-поиска всех НАШИХ ID ордеров и цен
-    const myOwnOrderIdsSet = new Set<string>();
-    const myOwnPricesSet = new Set<number>();
-
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const columns = line.split(',');
-        if (
-            columns.length <=
-            Math.max(typeIDIdx, bidIdx, priceIdx, orderIDIdx, stationIDIdx)
-        )
-            continue;
-
-        const typeID = parseInt(columns[typeIDIdx], 10);
-        const price = parseFloat(columns[priceIdx]);
-
-        const rawSystemId = columns[solarSystemIDIdx]?.trim();
-        const rawRegionId = columns[regionIDIdx]?.trim();
-
-        // Жесткая проверка: если колонок нет в файле — пропускаем строку, никакой Житы по умолчанию
-        if (!rawSystemId || !rawRegionId) continue;
-
-        // ИСПРАВЛЕНИЕ: Извлекаем cleanOrderId из колонок строки
-        const cleanOrderId = columns[orderIDIdx].trim();
-
-        myParsedOrders.push({
-            orderID: cleanOrderId,
-            typeID: typeID,
-            charID: '',
-            charName: '',
-            regionName: '',
-            solarSystemName: '',
-            range: '',
-            duration: 0,
-            escrow: 0,
-            isCorp: false,
-            accountID: '',
-            accountOwnerID: '',
-            accountKey: 0,
-            minVolume: 1,
-            issueDate: '',
-            orderState: '',
-            stationID: columns[stationIDIdx].trim(),
-            stationName: columns[stationNameIdx]
-                ? columns[stationNameIdx].trim()
-                : '',
-            solarSystemID: rawSystemId,
-            regionID: rawRegionId,
-            bid: columns[bidIdx].toLowerCase() === 'true',
-            price: price,
-            volEntered: 0,
-            volRemaining: parseFloat(columns[volRemainingIdx]) || 0,
-        });
-
-        uniqueTypeIds.add(typeID);
-        myOwnOrderIdsSet.add(cleanOrderId);
-        myOwnPricesSet.add(price);
-    }
-
-    const typeIdsArray = Array.from(uniqueTypeIds);
     const allWarUrls: string[] = [];
-    const urlMetadata: { typeID: number; bid: boolean }[] = [];
+    const urlMetadata: { typeID: number; orderType: 'buy' | 'sell' }[] = [];
+    const limit = pLimit(5);
 
-    for (const typeID of typeIdsArray) {
-        const sampleOrder = myParsedOrders.find((o) => o.typeID === typeID);
-        const regionId = sampleOrder
-            ? parseInt(sampleOrder.regionID, 10)
-            : 10000002;
-        const apiOrderType: 'buy' | 'sell' = sampleOrder?.bid ? 'buy' : 'sell';
+    // HEAD-запросы через пул p-limit для определения точного количества страниц x-pages
+    await Promise.all(
+        Array.from(uniqueMarketPairsSet).map((pairKey) =>
+            limit(async () => {
+                const [typeIdStr, orderTypeStr] = pairKey.split('-');
+                const typeID = parseInt(typeIdStr, 10);
+                const apiOrderType = orderTypeStr as 'buy' | 'sell';
+                const sample = myParsedOrders.find(
+                    (o) =>
+                        o.typeID === typeID &&
+                        o.bid === (apiOrderType === 'buy'),
+                );
+                if (!sample) return;
 
-        try {
-            const firstPageUrl = urlsConstructor.warOrders(
-                regionId,
-                typeID,
-                apiOrderType,
-                1,
-            );
-            const response = await fetch(firstPageUrl, { method: 'HEAD' });
-            const pagesQuantity = Number(response.headers.get('x-pages')) || 1;
-
-            for (let page = 1; page <= pagesQuantity; page++) {
-                allWarUrls.push(
-                    urlsConstructor.warOrders(
-                        regionId,
+                try {
+                    const firstUrl = urlsConstructor.warOrders(
+                        parseInt(sample.regionID, 10),
                         typeID,
                         apiOrderType,
-                        page,
-                    ),
-                );
-                urlMetadata.push({ typeID, bid: sampleOrder?.bid ?? false });
-            }
-        } catch (error) {
-            console.error(
-                `Failed to HEAD headers for typeID ${typeID}:`,
-                error,
-            );
-        }
-    }
+                        1,
+                    );
+                    const response = await fetch(firstUrl, { method: 'HEAD' });
+                    const pagesQuantity =
+                        Number(response.headers.get('x-pages')) || 1;
 
-    const fakeNumObjects = typeIdsArray.map((id) => ({
+                    for (let p = 1; p <= pagesQuantity; p++) {
+                        allWarUrls.push(
+                            urlsConstructor.warOrders(
+                                parseInt(sample.regionID, 10),
+                                typeID,
+                                apiOrderType,
+                                p,
+                            ),
+                        );
+                        urlMetadata.push({ typeID, orderType: apiOrderType });
+                    }
+                } catch (err) {
+                    console.error(
+                        `ESI HEAD Request failed for key ${pairKey}:`,
+                        err,
+                    );
+                }
+            }),
+        ),
+    );
+
+    // Скачивание стаканов ESI и имен SDE через queryHandler
+    const uniqueTypeIds = Array.from(
+        new Set(myParsedOrders.map((o) => o.typeID)),
+    );
+    const fakeNumObjects = uniqueTypeIds.map((id) => ({
         type_id: id,
         buy: 0,
         sell: 0,
@@ -185,33 +81,35 @@ export async function executeWarAnalysis(
         vol: 0,
         orders: 0,
     }));
-    const allWarInfoUrls: string[] = urlsConstructor.info(fakeNumObjects);
 
     const marketResponses = await queryHandler<IOrder[]>(allWarUrls);
-    const infoResponses = await queryHandler<IInfo>(allWarInfoUrls);
+    const infoResponses = await queryHandler<IInfo>(
+        urlsConstructor.info(fakeNumObjects),
+    );
 
-    const globalOrdersMap = new Map<number, IOrder[]>();
-    for (let i = 0; i < marketResponses.length; i++) {
-        const pageData = marketResponses[i];
-        if (!pageData) continue;
-        const meta = urlMetadata[i];
-
-        if (!globalOrdersMap.has(meta.typeID)) {
-            globalOrdersMap.set(meta.typeID, []);
-        }
-        globalOrdersMap.get(meta.typeID)!.push(...pageData);
-    }
-
-    const infoMap = new Map<number, string>();
-    typeIdsArray.forEach((id, index) => {
-        infoMap.set(id, infoResponses[index]?.name ?? `Unknown Item ${id}`);
+    const globalOrdersMap = new Map<string, IOrder[]>();
+    marketResponses.forEach((pageData, idx) => {
+        if (!pageData) return;
+        const meta = urlMetadata[idx];
+        const key = `${meta.typeID}-${meta.orderType}`;
+        if (!globalOrdersMap.has(key)) globalOrdersMap.set(key, []);
+        globalOrdersMap.get(key)!.push(...pageData);
     });
 
+    const infoMap = new Map(
+        uniqueTypeIds.map((id, index) => [
+            id,
+            infoResponses[index]?.name ?? `Item ${id}`,
+        ]),
+    );
     const resultTable: IWarItem[] = [];
 
-    // АНАЛИЗ С УЧЕТОМ АВТО-ИСКЛЮЧЕНИЯ НАШИХ СОБСТВЕННЫХ КОНКУРИРУЮЩИХ ОРДЕРОВ
+    // Изолированный атомарный анализ по каждому индивидуальному ордеру из файла лога
     for (const myOrder of myParsedOrders) {
-        const allMarketOrders = globalOrdersMap.get(myOrder.typeID) || [];
+        const orderTypeKey = myOrder.bid ? 'buy' : 'sell';
+        const marketMapKey = `${myOrder.typeID}-${orderTypeKey}`;
+
+        const allMarketOrders = globalOrdersMap.get(marketMapKey) || [];
         const myHubSystemId = parseInt(myOrder.solarSystemID, 10);
         const myStationId = parseInt(myOrder.stationID, 10);
 
@@ -224,100 +122,81 @@ export async function executeWarAnalysis(
         const activeMyPrice = myCurrentLiveOrder
             ? myCurrentLiveOrder.price
             : myOrder.price;
-
-        const locationShort = myOrder.stationName.includes('Jita')
-            ? 'Jita'
-            : myOrder.stationName.includes('Perimeter')
-              ? 'Perim'
-              : 'Hub';
-
         const itemName =
             infoMap.get(myOrder.typeID) || `Item ${myOrder.typeID}`;
 
-        if (myOrder.bid) {
-            // --- BUY ORDERS ---
-            const competitorsHigherBuy = localAreaOrders.filter((o) => {
-                if (!o.is_buy_order || o.price <= activeMyPrice) return false;
+        const currentGroup =
+            myGroupedOrdersMap.get(`${myOrder.typeID}-${myOrder.bid}`) || [];
+        const isLeaderOfMyStack = currentGroup[0]?.orderID === myOrder.orderID;
 
-                const isMyOwnOrder =
-                    myOwnOrderIdsSet.has(String(o.order_id)) ||
-                    myOwnPricesSet.has(o.price);
-                if (isMyOwnOrder) return false;
-
-                const isSameStation = o.location_id === myStationId;
-                const isRegionalRange =
-                    o.range === 'region' || parseInt(o.range, 10) >= 1;
-
-                return isSameStation || isRegionalRange;
+        // Если это не верхний ордер в нашем внутреннем стеке — сразу в авто-игнор
+        if (!isLeaderOfMyStack) {
+            resultTable.push({
+                name: itemName,
+                vol: myOrder.volRemaining,
+                buy: myOrder.bid ? currentGroup[0]?.price : activeMyPrice,
+                sell: myOrder.bid ? activeMyPrice : currentGroup[0]?.price,
+                roi: 0,
+                ipm: 0,
+                orderID: myOrder.orderID,
+                status: 'IGNORED',
+                isBuy: myOrder.bid,
             });
+            continue;
+        }
 
-            if (competitorsHigherBuy.length > 0) {
-                const bestCompetitorPrice = Math.max(
-                    ...competitorsHigherBuy.map((o) => o.price),
-                );
-                resultTable.push({
-                    name: `⚔️ [BUY UNDER_CUT] ${itemName}`,
-                    vol: myOrder.volRemaining,
-                    buy: bestCompetitorPrice,
-                    sell: activeMyPrice,
-                    roi: 0,
-                    ipm: 0,
-                    orderID: myOrder.orderID,
-                });
+        // Фильтрация ЧУЖИХ конкурентов для флагманского ордера группы
+        const competitors = localAreaOrders.filter((o) => {
+            if (myOrder.bid) {
+                if (!o.is_buy_order || o.price <= activeMyPrice) return false;
             } else {
-                resultTable.push({
-                    name: `👑 [BUY TOP_1] ${itemName}`,
-                    vol: myOrder.volRemaining,
-                    buy: activeMyPrice,
-                    sell: activeMyPrice,
-                    roi: 0,
-                    ipm: 0,
-                    orderID: myOrder.orderID,
-                });
-            }
-        } else {
-            // --- SELL ORDERS ---
-            const competitorsLowerSell = localAreaOrders.filter((o) => {
                 if (
                     o.is_buy_order ||
                     o.location_id !== myStationId ||
                     o.price >= activeMyPrice
                 )
                     return false;
-
-                const isMyOwnOrder =
-                    myOwnOrderIdsSet.has(String(o.order_id)) ||
-                    myOwnPricesSet.has(o.price);
-                if (isMyOwnOrder) return false;
-
-                return true;
-            });
-
-            if (competitorsLowerSell.length > 0) {
-                const bestCompetitorPrice = Math.min(
-                    ...competitorsLowerSell.map((o) => o.price),
-                );
-                resultTable.push({
-                    name: `⚔️ [SELL UNDER_CUT] ${itemName}`,
-                    vol: myOrder.volRemaining,
-                    buy: activeMyPrice,
-                    sell: bestCompetitorPrice,
-                    roi: 0,
-                    ipm: 0,
-                    orderID: myOrder.orderID,
-                });
-            } else {
-                resultTable.push({
-                    name: `👑 [SELL TOP_1] ${itemName}`,
-                    vol: myOrder.volRemaining,
-                    buy: activeMyPrice,
-                    sell: activeMyPrice,
-                    roi: 0,
-                    ipm: 0,
-                    orderID: myOrder.orderID,
-                });
             }
+
+            if (
+                String(o.order_id) === String(myOrder.orderID) ||
+                myOwnOrderIdsSet.has(String(o.order_id))
+            ) {
+                return false;
+            }
+
+            if (myOrder.bid) {
+                if (
+                    myOrder.range === 'station' ||
+                    myOrder.range === 'use_station'
+                )
+                    return o.location_id === myStationId;
+                if (myOrder.range === 'solarsystem')
+                    return o.system_id === myHubSystemId;
+            }
+            return true;
+        });
+
+        const hasCompetitors = competitors.length > 0;
+        let compPrice = activeMyPrice;
+        if (hasCompetitors) {
+            compPrice = myOrder.bid
+                ? Math.max(...competitors.map((o) => o.price))
+                : Math.min(...competitors.map((o) => o.price));
         }
+
+        resultTable.push({
+            name: itemName,
+            vol: myOrder.volRemaining,
+            buy: myOrder.bid ? compPrice : activeMyPrice,
+            sell: myOrder.bid ? activeMyPrice : compPrice,
+            roi: 0,
+            ipm: 0,
+            orderID: myOrder.orderID,
+            // Полностью чистое, строго типизированное выражение без any
+            status: hasCompetitors ? 'OUTBID' : '',
+            isBuy: myOrder.bid,
+        });
     }
 
     return resultTable;

@@ -3,15 +3,15 @@ import { BASE_URL } from './constants';
 import { INumObj } from '@/src/types/interfaces';
 
 export const urlsConstructor = {
-    orders(currentReghionId: number, quantity: number): string[] {
-        const madeUrl = `${BASE_URL}markets/${currentReghionId}/orders?order_type=all`;
+    orders(currentRegionId: number, quantity: number): string[] {
+        const madeUrl = `${BASE_URL}markets/${currentRegionId}/orders?order_type=all`;
         return Array.from(
             { length: quantity },
             (_, i) => `${madeUrl}&page=${i + 1}`,
         );
     },
-    history(items: INumObj[], currentReghionId: number): string[] {
-        const madeUrl = `${BASE_URL}markets/${currentReghionId}/history?type_id=`;
+    history(items: INumObj[], currentRegionId: number): string[] {
+        const madeUrl = `${BASE_URL}markets/${currentRegionId}/history?type_id=`;
         return Array.from(
             { length: items.length },
             (_, i) => madeUrl + items[i].type_id,
@@ -24,7 +24,10 @@ export const urlsConstructor = {
             (_, i) => madeUrl + items[i].type_id,
         );
     },
-    // Улучшенный метод: теперь принимает точный тип ордера (buy/sell) и номер страницы
+    /**
+     * Точечный URL для конкретного типа и направления (buy/sell).
+     * Качает только нужное направление стакана для жесткой экономии входящего трафика.
+     */
     warOrders(
         currentRegionId: number,
         typeId: number,
