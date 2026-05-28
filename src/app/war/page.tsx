@@ -26,15 +26,15 @@ export default function War(): React.JSX.Element {
     const [warItems, setWarItems] = useState<IWarItem[]>([]);
     const [computerUser, setComputerUser] = useState<string>('User');
     const [isAutoChecking, setIsAutoChecking] = useState<boolean>(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFile, setSelectedFile] = useState<FileList | null>(null);
     const [pathBtnText, setPathBtnText] = useState<string>('[Copy Path]');
+    const [updateNonce, setUpdateNonce] = useState<string>('init');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cachedLogTextRef = useRef<string | null>(null);
     const radarWorkerRef = useRef<Worker | null>(null);
-    const radarWorkerUrlRef = useRef<string | null>(null);
+    const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Сегрегация массивов по физическому смыслу (Buy-ордера всегда имеют buy < sell)
     const sellWarItems = useMemo(() => {
         return warItems.filter((item) => !item.isBuy);
     }, [warItems]);
@@ -55,7 +55,133 @@ export default function War(): React.JSX.Element {
         });
     };
 
-    // Модификация цен +-0.01 ISK с прямой мутацией класса анимации copyBtnCopied
+    const clearRowsVisualOpacity = (): void => {
+        const rows = document.querySelectorAll('tr');
+        rows.forEach((row) => {
+            const tr = row as HTMLTableRowElement;
+            tr.removeAttribute('data-row-done');
+            tr.removeAttribute('data-status-ignored');
+            if (tr.style.opacity === '0.35') {
+                tr.style.opacity = '1';
+            }
+        });
+    };
+
+    // Запрос прав на системные уведомления Windows при инициализации модуля
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+    }, []);
+
+    // Реф-предохранитель, защищающий от циклического спама модальными окнами
+
+    // Реф-предохранитель, чтобы не спамить звуковыми сигналами на одном тике
+
+    const hasAlertedThisTickRef = useRef<boolean>(false);
+
+    // Функция генерации системного пуша. Именно пуш заставляет мигать панель задач в Windows.
+    const triggerSystemNotification = useCallback(
+        (outbidCount: number): void => {
+            if (
+                typeof window !== 'undefined' &&
+                'Notification' in window &&
+                Notification.permission === 'granted' &&
+                document.hidden // Стреляет строго тогда, когда браузер свернут и вы в игре
+            ) {
+                // Создаем нативный пуш Windows
+                const notification = new Notification(
+                    '⚔️ ISK MASTER: Ордера перебиты!',
+                    {
+                        body: `Внимание! Обнаружено ${outbidCount} вражеских ставок. Пора переставлять цены!`,
+                        tag: 'eve-war-alert', // Предотвращает спам (новый пуш заменяет старый)
+                        requireInteraction: false, // Пуш пропадет сам, но иконка на панели задач продолжит мигать
+                    },
+                );
+
+                // При клике на пуш — разворачиваем и фокусируем окно браузера
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
+            }
+        },
+        [],
+    );
+
+    const updateBlinkingAlertStatus = useCallback((): void => {
+        const rows = document.querySelectorAll('tr');
+        let hasActiveOutbid = false;
+        let outbidCounter = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+            const tr = rows[i] as HTMLTableRowElement;
+
+            if (
+                tr.hasAttribute('data-row-done') ||
+                tr.hasAttribute('data-status-ignored')
+            ) {
+                continue;
+            }
+
+            const alertBtn = tr.querySelector(
+                `.${styles.changedAlertBtn}`,
+            ) as HTMLButtonElement | null;
+            if (alertBtn && alertBtn.innerText === 'OUTBID') {
+                hasActiveOutbid = true;
+                outbidCounter++;
+            }
+        }
+
+        if (hasActiveOutbid) {
+            // 1. Внутреннее мигание названия вкладки
+            if (!blinkIntervalRef.current) {
+                let toggle = false;
+                blinkIntervalRef.current = setInterval(() => {
+                    document.title = toggle ? '🔴 0.01 ISK WAR' : 'ISK Master';
+                    toggle = !toggle;
+                }, 1000);
+            }
+
+            // 2. Внешний триггер Windows через системный пуш
+            if (document.hidden && !hasAlertedThisTickRef.current) {
+                hasAlertedThisTickRef.current = true;
+                triggerSystemNotification(outbidCounter);
+            }
+        } else {
+            if (blinkIntervalRef.current) {
+                clearInterval(blinkIntervalRef.current);
+                blinkIntervalRef.current = null;
+            }
+            document.title = 'ISK Master';
+            hasAlertedThisTickRef.current = false;
+        }
+    }, [triggerSystemNotification]);
+
+    // Запрос прав на пуши при первой загрузке интерфейса
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+    }, []);
+
+    // Сброс предохранителя спама при получении свежих данных от авто-чекера
+    useEffect(() => {
+        hasAlertedThisTickRef.current = false;
+        updateBlinkingAlertStatus();
+
+        window.addEventListener('war-dom-updated', updateBlinkingAlertStatus);
+        return () => {
+            window.removeEventListener(
+                'war-dom-updated',
+                updateBlinkingAlertStatus,
+            );
+        };
+    }, [warItems, updateBlinkingAlertStatus]);
     const executeCopy = useCallback(
         (
             e: React.MouseEvent<HTMLButtonElement>,
@@ -93,27 +219,9 @@ export default function War(): React.JSX.Element {
     );
 
     const { sellColumns, buyColumns } = useWarColumnsConfiguration({
+        updateNonce,
         executeCopy,
     });
-
-    const triggerRadarScan = useCallback(async (): Promise<void> => {
-        const savedText = cachedLogTextRef.current;
-        if (!savedText) return;
-        try {
-            const response = await fetch('/api/war', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ logText: savedText }),
-            });
-            if (!response.ok) throw new Error('Network error');
-            const result = await response.json();
-            if (result && Array.isArray(result.data)) {
-                setWarItems(result.data);
-            }
-        } catch (error) {
-            console.error('Auto-radar scan failed:', error);
-        }
-    }, []);
 
     const toggleAutoChecker = (): void => {
         if (isAutoChecking) {
@@ -121,47 +229,79 @@ export default function War(): React.JSX.Element {
                 radarWorkerRef.current.terminate();
                 radarWorkerRef.current = null;
             }
-            if (radarWorkerUrlRef.current) {
-                URL.revokeObjectURL(radarWorkerUrlRef.current);
-                radarWorkerUrlRef.current = null;
-            }
             setIsAutoChecking(false);
         } else {
-            if (!cachedLogTextRef.current) return;
+            const savedText = cachedLogTextRef.current;
+            if (!savedText) return;
             setIsAutoChecking(true);
 
-            const radarCode = `let t = null; self.onmessage = function(e) { if (e.data === 'start') { t = setInterval(() => { self.postMessage('tick'); }, 305000); } };`;
+            const radarCode = `
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        setInterval(() => {
+                            self.postMessage('tick');
+                        }, 305000);
+                    }
+                };
+            `;
+
             const blob = new Blob([radarCode], {
                 type: 'application/javascript',
             });
             const url = URL.createObjectURL(blob);
-            radarWorkerUrlRef.current = url;
-
             const worker = new Worker(url);
             radarWorkerRef.current = worker;
+
             worker.postMessage('start');
-            worker.onmessage = (e: MessageEvent) => {
-                if (e.data === 'tick') triggerRadarScan();
+
+            worker.onmessage = async (e: MessageEvent) => {
+                if (e.data === 'tick' && cachedLogTextRef.current) {
+                    try {
+                        const response = await fetch('/api/war', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                logText: cachedLogTextRef.current,
+                            }),
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+
+                            clearRowsVisualOpacity();
+                            setUpdateNonce(Date.now().toString());
+                            if (result && Array.isArray(result.data)) {
+                                setWarItems(result.data);
+                            }
+                        }
+                    } catch (err) {
+                        console.error(
+                            'Background auto radar network crash:',
+                            err,
+                        );
+                    }
+                }
             };
+            URL.revokeObjectURL(url);
         }
     };
 
     useEffect(() => {
         return () => {
             if (radarWorkerRef.current) radarWorkerRef.current.terminate();
-            if (radarWorkerUrlRef.current)
-                URL.revokeObjectURL(radarWorkerUrlRef.current);
+            if (blinkIntervalRef.current)
+                clearInterval(blinkIntervalRef.current);
         };
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         if (e.target.files && e.target.files.length > 0) {
-            setSelectedFile(e.target.files[0]);
+            setSelectedFile(e.target.files);
         }
     };
 
     const handleUploadFile = (): void => {
-        if (!selectedFile) return;
+        if (!selectedFile || selectedFile.length === 0) return;
         const reader = new FileReader();
         reader.onload = async (event) => {
             const textContent = event.target?.result as string;
@@ -177,8 +317,12 @@ export default function War(): React.JSX.Element {
                     });
                     if (!response.ok) throw new Error('Processing exception');
                     const result = await response.json();
-                    if (result && Array.isArray(result.data))
+
+                    clearRowsVisualOpacity();
+                    setUpdateNonce(Date.now().toString());
+                    if (result && Array.isArray(result.data)) {
                         setWarItems(result.data);
+                    }
 
                     setSelectedFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -187,8 +331,10 @@ export default function War(): React.JSX.Element {
                 }
             });
         };
-        reader.readAsText(selectedFile);
+        reader.readAsText(selectedFile[0]);
     };
+
+    // ./src/app/war/page.tsx (Полный блок разметки return)
 
     return (
         <section className={styles.warPageSection}>
@@ -269,7 +415,6 @@ export default function War(): React.JSX.Element {
 
             <div className="container" style={{ marginTop: '32px' }}>
                 <h4 className={styles.tableHeading}>🔺 BUY ORDERS</h4>
-
                 <Table<IWarItem>
                     items={buyWarItems}
                     columns={buyColumns}

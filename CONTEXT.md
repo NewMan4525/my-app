@@ -1,3 +1,5 @@
+./CONTEXT.md
+
 # CONTEXT: ISK MASTER (NEXT.JS 16 + TS)
 
 ## 🎯 ROLE & MODE
