@@ -14,6 +14,7 @@ import styles from './war.module.css';
 import Table from '@/src/components-generic/table';
 import { IWarItem } from '@/src/types/interfaces';
 import { useWarColumnsConfiguration } from './columnsConfig';
+import { calculateModifiedIsk } from '@/src/utils/clipboardModify';
 
 const InfoPanelNoSSR = dynamic(
     () => import('@/src/components-feature/infoPanel'),
@@ -66,13 +67,12 @@ export default function War(): React.JSX.Element {
             let finalClipboardData = text;
 
             if (type === 'buy') {
-                finalClipboardData = (
-                    Math.round((parseFloat(text) + 0.01) * 100) / 100
-                ).toFixed(2);
+                finalClipboardData = calculateModifiedIsk(Number(text), 'plus');
             } else if (type === 'sell') {
-                finalClipboardData = (
-                    Math.round((parseFloat(text) - 0.01) * 100) / 100
-                ).toFixed(2);
+                finalClipboardData = calculateModifiedIsk(
+                    Number(text),
+                    'minus',
+                );
             }
 
             navigator.clipboard
