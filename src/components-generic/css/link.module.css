@@ -1,3 +1,16 @@
-.link_wrapper:hover {
-  color: var(--hover-text);
+/* ./src/app/components-generic/css/overview.module.css */
+
+/* Токены позиционирования оверлей-контейнера */
+:root {
+    --overview-width: 100%;
+    --overview-height: 100%;
+    --overview-z-index: 1;
+}
+
+.overview {
+    background-color: var(--bg-primary);
+    width: var(--overview-width);
+    height: var(--overview-height);
+    position: absolute;
+    z-index: var(--overview-z-index);
 }

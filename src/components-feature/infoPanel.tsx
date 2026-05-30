@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from './css/info_panel.module.css';
-import { getFromStorage } from '@/src/utils/storage';
+import { getFromStorage } from '@/src/utils/helpers';
 import { ITradeSettings } from '@/src/types/interfaces';
 import { HUBS } from '@/src/lib/constants';
 
@@ -42,12 +42,18 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
             return <p>No settings saved. Configure options and click OK.</p>;
         }
 
-        const currentHub = Object.values(HUBS).find(
-            (h) => h.region.alias === marketSettings.region,
-        );
+        // Оптимизация производительности: Прямой доступ к объекту HUBS по ключу вместо Object.values().find()
+        const targetRegion = marketSettings.region;
+        const currentHub = Object.prototype.hasOwnProperty.call(
+            HUBS,
+            targetRegion,
+        )
+            ? HUBS[targetRegion as keyof typeof HUBS]
+            : null;
+
         const regionName = currentHub
             ? `${currentHub.region.name} (${currentHub.system.name})`
-            : marketSettings.region;
+            : targetRegion;
 
         const buyStationType = marketSettings.marketPlaceBuyIsCitadel
             ? 'Citadel'
@@ -80,7 +86,7 @@ export default function InfoPanel({ isPending }: InfoPanelProps) {
                         {marketSettings.volumeMin} - {marketSettings.volumeMax}
                     </p>
                     <p>
-                        <strong>Margin limit:</strong> padd
+                        <strong>Margin limit:</strong>{' '}
                         {marketSettings.marginMin}% - {marketSettings.marginMax}
                         %
                     </p>

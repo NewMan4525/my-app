@@ -2,11 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeWarAnalysis } from '@/src/services/warExecuter';
 
+interface IWarRequestPayload {
+    logText?: string;
+}
+
 export async function POST(request: NextRequest) {
     try {
-        // Парсим входящий JSON
-        const body = await request.json();
-        const fileContent = body?.logText as string | undefined;
+        // Строго типизируем входящий JSON для защиты компилятора от implicit any
+        const body: IWarRequestPayload = await request.json();
+        const fileContent = body?.logText;
 
         if (!fileContent || !fileContent.trim()) {
             return NextResponse.json(

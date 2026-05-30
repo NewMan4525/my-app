@@ -1,10 +1,9 @@
-// components-generic/overview.tsx
+// ./src/components-generic/overview.tsx
 'use client';
 
 import React from 'react';
 import styles from './css/overview.module.css';
 
-// Строгий интерфейс для дочерних элементов и управления видимостью (ЗАПРЕЩЕН any)
 interface OverviewProps {
     children: React.ReactNode;
     isVisible: boolean;

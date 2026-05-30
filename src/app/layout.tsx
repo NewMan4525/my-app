@@ -1,3 +1,4 @@
+// ./src/app/layout.tsx
 import type { Metadata } from 'next';
 import Header from '@/src/components-feature/header';
 import { JetBrains_Mono } from 'next/font/google';
@@ -5,7 +6,8 @@ import './globals.css';
 
 const jetBrainsMono = JetBrains_Mono({
     subsets: ['latin', 'cyrillic'],
-    weight: '500', // 500 соответствует Medium
+    weight: ['300', '400'], // Подключаем тонкий (300) и стандартный (400) веса
+    variable: '--font-jetbrains-mono', // Регистрируем CSS-переменную для globals.css
 });
 
 export const metadata: Metadata = {

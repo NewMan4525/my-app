@@ -1,28 +1,37 @@
 // ./src/components-feature/userForm.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import styles from '@/src/app/user/user.module.css';
 import InputsBlock from '@/src/components-feature/inputsBlock';
-import { HUBS } from '@/src/lib/constants';
+
 import {
+    HUBS,
     userStats as defaultUserStats,
     userSkills as defaultUserSkills,
-} from '@/src/lib/settings';
-import { InputsBlockOptionCreator } from '@/src/utils/classes';
-import { setToStorage, getFromStorage } from '@/src/utils/storage';
+} from '@/src/lib/constants';
+import { setToStorage, getFromStorage } from '@/src/utils/helpers';
 import { IUserStats } from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';
+import { buildUserPresets } from '@/src/utils/presets/userOptions';
+
+const HUB_KEYS = [
+    'the_forge',
+    'domain',
+    'sinq_laison',
+    'metropolis',
+    'heimatar',
+];
 
 const getUserValues = (
     savedStats: IUserStats | null,
     savedSkills: IUserSkills | null,
 ) => {
-    const initial: { [key: string]: number } = {};
+    const initial: Record<string, number> = {};
+    const len = HUB_KEYS.length;
 
-    // Важно: Инициализируем числовые поля строго с суффиксом "0" или "1"
-    // в полном соответствии с оригинальной логикой склейки класса InputsBlockOptionCreator!
-    Object.keys(HUBS).forEach((key) => {
+    for (let i = 0; i < len; i++) {
+        const key = HUB_KEYS[i];
         const regionName = HUBS[key].region.alias;
         initial[`${regionName}_factionStand0`] =
             savedStats?.[regionName]?.factionStand ??
@@ -32,7 +41,7 @@ const getUserValues = (
             savedStats?.[regionName]?.stationOwnerStand ??
             defaultUserStats[regionName]?.stationOwnerStand ??
             0;
-    });
+    }
 
     initial['skills_broker_relationship0'] =
         savedSkills?.broker_relationship ??
@@ -47,13 +56,11 @@ const getUserValues = (
 };
 
 export default function UserForm() {
-    const [formValues, setFormValues] = useState<{ [key: string]: number }>(
-        () => {
-            const savedStats = getFromStorage<IUserStats>('user_stats');
-            const savedSkills = getFromStorage<IUserSkills>('user_skills');
-            return getUserValues(savedStats, savedSkills);
-        },
-    );
+    const [formValues, setFormValues] = useState<Record<string, number>>(() => {
+        const savedStats = getFromStorage<IUserStats>('user_stats');
+        const savedSkills = getFromStorage<IUserSkills>('user_skills');
+        return getUserValues(savedStats, savedSkills);
+    });
 
     const handleNumberChange = (name: string, value: number) => {
         setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -72,15 +79,17 @@ export default function UserForm() {
         e.preventDefault();
 
         const updatedStats: IUserStats = {};
-        Object.keys(HUBS).forEach((key) => {
+        const len = HUB_KEYS.length;
+
+        for (let i = 0; i < len; i++) {
+            const key = HUB_KEYS[i];
             const regionName = HUBS[key].region.alias;
             updatedStats[regionName] = {
-                // Считываем стендинги по точным ключам с индексами "0" и "1"
                 factionStand: formValues[`${regionName}_factionStand0`] ?? 0,
                 stationOwnerStand:
                     formValues[`${regionName}_stationOwnerStand1`] ?? 0,
             };
-        });
+        }
 
         const updatedSkills: IUserSkills = {
             broker_relationship: formValues['skills_broker_relationship0'] ?? 1,
@@ -91,104 +100,10 @@ export default function UserForm() {
 
         setToStorage<IUserStats>('user_stats', updatedStats);
         setToStorage<IUserSkills>('user_skills', updatedSkills);
-        alert('User stats and skills successfully saved!');
+        console.log('User stats and skills successfully saved.');
     };
 
-    const txt = ' stand';
-    const settings: InputsBlockOptionCreator[] = [
-        ...Array.from({ length: Object.keys(HUBS).length }, (_, i) => {
-            const regionKey = Object.keys(HUBS)[i];
-            const regionName = HUBS[regionKey].region.alias;
-            const factionOwner = HUBS[regionKey].owners.faction.alias;
-            const stationOwner = HUBS[regionKey].owners.corporation.alias;
-
-            return new InputsBlockOptionCreator(regionName, [
-                {
-                    type: 'number',
-                    options: [
-                        {
-                            name: `${regionName}_factionStand`,
-                            text: factionOwner + txt,
-                            defaultValue:
-                                formValues[`${regionName}_factionStand0`],
-                        },
-                    ],
-                },
-                {
-                    type: 'number',
-                    options: [
-                        {
-                            name: `${regionName}_stationOwnerStand`,
-                            text: stationOwner + txt,
-                            defaultValue:
-                                formValues[`${regionName}_stationOwnerStand1`],
-                        },
-                    ],
-                },
-            ]);
-        }),
-        ...[
-            new InputsBlockOptionCreator('skills_lvl', [
-                {
-                    type: 'radio',
-                    options: Array.from({ length: 5 }, (_, i) => {
-                        const lvl = i + 1;
-                        return {
-                            groupName: 'broker_relationship',
-                            name: 'skills_broker_relationship',
-                            text: 'lvl' + ' ' + lvl,
-                            defaultChecked:
-                                lvl ===
-                                formValues['skills_broker_relationship0'],
-                        };
-                    }),
-                },
-                {
-                    type: 'radio',
-                    options: Array.from({ length: 5 }, (_, i) => {
-                        const lvl = i + 1;
-                        return {
-                            groupName: 'advanced_broker_relationship',
-                            name: 'skills_advanced_broker_relationship',
-                            text: 'lvl' + ' ' + lvl,
-                            defaultChecked:
-                                lvl ===
-                                formValues[
-                                    'skills_advanced_broker_relationship1'
-                                ],
-                        };
-                    }),
-                },
-                {
-                    type: 'radio',
-                    options: Array.from({ length: 5 }, (_, i) => {
-                        const lvl = i + 1;
-                        return {
-                            groupName: 'accounting',
-                            name: 'skills_accounting',
-                            text: 'lvl' + ' ' + lvl,
-                            defaultChecked:
-                                lvl === formValues['skills_accounting2'],
-                        };
-                    }),
-                },
-            ]),
-            new InputsBlockOptionCreator('', [
-                {
-                    type: 'reset',
-                    options: [
-                        { name: 'cancel_options', defaultValue: 'cancel' },
-                    ],
-                },
-                {
-                    type: 'submit',
-                    options: [{ name: 'accept_options', defaultValue: 'OK' }],
-                },
-            ]),
-        ],
-    ];
-
-    const typedCastedValues = formValues as Record<string, number>;
+    const settings = useMemo(() => buildUserPresets(formValues), [formValues]);
 
     return (
         <form
@@ -202,7 +117,7 @@ export default function UserForm() {
                     key={i}
                     h3={item.h3}
                     inputsProps={item.inputsProps}
-                    values={typedCastedValues}
+                    values={formValues}
                     onNumberChange={handleNumberChange}
                     onRadioChange={handleRadioChange}
                 />

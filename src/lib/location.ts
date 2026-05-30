@@ -1,43 +1,61 @@
 // ./src/lib/location.ts
-
 import { BASE_URL } from '@/src/lib/constants';
-import { IOrder } from '@/src/types/interfaces';
+import { queryHandler } from './querysHandler';
+import { isValidData } from '@/src/lib/helpers';
+
+interface IEsiStargateResponse {
+    destination: {
+        system_id: number;
+    };
+}
 
 export async function getNeighborSystems(
     hubSystemId: number,
 ): Promise<number[]> {
     try {
-        // 1. Получаем данные о целевой системе
         const res = await fetch(
             `${BASE_URL}latest/universe/systems/${hubSystemId}/`,
         );
-        const data = await res.json();
+        const data = (await res.json()) as { stargates?: number[] };
 
-        // 2. Извлекаем список всех ворот (stargates)
-        const stargateIds: number[] = data.stargates || [];
+        const stargateIds = data.stargates;
+        if (stargateIds === undefined || stargateIds.length === 0) {
+            return [hubSystemId];
+        }
 
-        // 3. Узнаем пункт назначения для каждых ворот
-        const neighbors = await Promise.all(
-            stargateIds.map(async (gateId) => {
-                const gateRes = await fetch(
-                    `${BASE_URL}latest/universe/stargates/${gateId}/`,
-                );
-                const gateData = await gateRes.json();
-                return gateData.destination.system_id as number;
-            }),
-        );
+        const len = stargateIds.length;
+        const gateUrls = new Array<string>(len);
 
-        // Возвращаем массив: [Сам Хаб, Сосед 1, Сосед 2, ...]
-        return [hubSystemId, ...neighbors];
+        for (let i = 0; i < len; i++) {
+            gateUrls[i] =
+                `${BASE_URL}latest/universe/stargates/${stargateIds[i]}/`;
+        }
+
+        const gateResponses =
+            await queryHandler<IEsiStargateResponse>(gateUrls);
+        const responsesLen = gateResponses.length;
+
+        // Предвыделяем точный максимальный объем памяти
+        const result = new Array<number>(responsesLen + 1);
+        result[0] = hubSystemId;
+        let actualCount = 1;
+
+        // Собираем ID соседних систем без накладных расходов push()
+        for (let i = 0; i < responsesLen; i++) {
+            const gateData = gateResponses[i];
+            if (isValidData(gateData)) {
+                result[actualCount++] = gateData.destination.system_id;
+            }
+        }
+
+        // Корректируем длину массива, если часть сетевых запросов вернула null
+        if (actualCount < result.length) {
+            result.length = actualCount;
+        }
+
+        return result;
     } catch (error) {
         console.error('Ошибка при поиске соседей:', error);
-        return [hubSystemId]; // Если API упал, возвращаем хотя бы хаб
+        return [hubSystemId];
     }
-}
-
-export function jumpFilter(
-    orders: IOrder[],
-    allowedSystems: number[],
-): IOrder[] {
-    return orders.filter((order) => allowedSystems.includes(order.system_id));
 }

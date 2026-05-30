@@ -1,3 +1,15 @@
+/* ./src/app/components-generic/css/button.module.css */
+
+/* Токены переходов для интерактивных кнопок */
+:root {
+    --btn-transition: color 0.15s ease;
+}
+
+.button_wrapper {
+    /* Обеспечиваем плавный переход при наведении для всех кнопок */
+    transition: var(--btn-transition);
+}
+
 .button_wrapper:hover {
-  color: var(--hover-text);
+    color: var(--hover-text);
 }

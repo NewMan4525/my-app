@@ -1,46 +1,47 @@
-/* src/components-generic/css/table.module.css */
+/* ./src/components-generic/css/table.module.css */
 
 .dataTableSection {
     max-width: 100%;
-    margin: 10px auto;
+    margin: var(--table-section-margin);
     position: relative;
-    top: 40px;
+    top: var(--table-section-top);
     z-index: 0;
 }
 
 .tableContainer {
     overflow-x: auto;
-    max-height: 85dvh;
+    max-height: var(--table-max-height);
     overflow-y: auto;
 }
 
 /* Кастомный тонкий скроллбар */
 .tableContainer::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: var(--table-scroll-size);
+    height: var(--table-scroll-size);
 }
+
 .tableContainer::-webkit-scrollbar-thumb {
     background: var(--inactive);
-    border-radius: 10px;
+    border-radius: var(--table-scroll-radius);
 }
 
 .marketTable {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: var(--table-font-td);
     white-space: nowrap;
-    color: var(--text-primary);
+    color: var(--text-secondary); /* Цвет переменных по умолчанию */
 }
 
-/* Липкая шапка */
+/* Липкая шапка таблицы без фонов и рамок */
 .marketTable thead th {
     position: sticky;
     top: 0;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    padding: 2px 5px;
-    font-size: 14px;
-    border-bottom: 2px solid var(--inactive);
+    background: var(--bg-primary); /* Сливается с body */
+    color: var(--text-secondary); /* Цвет переменных */
+    padding: var(--table-padding-th);
+    font-size: var(--table-font-th);
+    border-bottom: 1px solid var(--inactive); /* Минималистичная тонкая линия разделения */
     z-index: 10;
     font-weight: 400;
     text-align: left;
@@ -48,8 +49,8 @@
 
 /* Ячейки данных */
 .marketTable td {
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--inactive);
+    padding: var(--table-padding-td);
+    border-bottom: 1px dashed var(--inactive); /* Тонкий пунктир вместо жестких рамок */
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
     cursor: pointer;
@@ -57,42 +58,43 @@
 }
 
 .marketTable tbody tr:hover {
-    background: var(--hover-element);
+    background: var(
+        --hover-element
+    ); /* Легкая подсветка строки в стиле проводника */
 }
 
-/* Выделенная строка Windows/EVE Online style */
+/* Выделенная строка Windows-style: темно-синий матовый как константа */
 .marketTable tbody tr.isSelected {
-    background-color: #2a4457 !important;
-    outline: 1px solid #4a90e2;
+    background-color: var(--active) !important;
+    outline: none !important;
 }
 
 .marketTable tbody tr.isSelected td {
-    color: #ffffff !important;
+    color: #ffffff !important; /* Белый контрастный текст внутри выделения */
 }
 
-/* Шапка сортировки */
 .sortable {
     cursor: pointer;
     user-select: none;
 }
+
 .sortable:hover {
-    color: var(--hover-text);
+    color: var(--hover-text); /* Фиолетовый ховер */
 }
 
-/* Обычное состояние иконки (приглушенное) */
 .sortIcon {
     margin-left: 4px;
-    font-size: 11px;
+    font-size: var(--table-font-icon);
     color: var(--inactive);
     vertical-align: middle;
     display: inline-block;
     transition: color 0.15s ease;
 }
 
-/* Активное состояние иконки (яркая подсветка) */
 .sortActive {
-    color: var(--active) !important;
-    text-shadow: 0 0 8px var(--active);
+    color: var(
+        --hover-text
+    ) !important; /* Активная сортировка подсвечена фиолетовым */
 }
 
 .cellContent {
@@ -105,33 +107,7 @@
 
 .emptyCell {
     text-align: center;
-    padding: 60px 20px;
+    padding: var(--table-padding-empty);
     color: var(--inactive);
     font-style: italic;
-}
-
-/* Кнопка [Copy] */
-.copyBtn {
-    font-size: 11px;
-    padding: 0px 2px;
-    opacity: 0.5;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-    font-family: inherit;
-    transition:
-        transform 0.1s ease,
-        color 0.1s ease;
-}
-
-.copyBtn:hover {
-    opacity: 1;
-}
-
-/* Зеленый неоновый фидбек успешного копирования */
-.copyBtnCopied {
-    color: #00ff88 !important;
-    transform: scale(1.1);
-    opacity: 1 !important;
 }

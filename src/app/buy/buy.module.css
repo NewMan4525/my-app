@@ -1,4 +1,4 @@
-/* src/app/buy/buy.module.css */
+/* ./src/app/buy/buy.module.css */
 
 .container {
     width: 100%;
@@ -9,23 +9,24 @@
 
 .loadingOverlay {
     text-align: center;
-    color: var(--warn);
+    color: var(--color-wrn);
     padding: 10px;
     font-style: italic;
 }
 
+/* Наследуем базовые цветовые классы из globals.css через локальное перекрытие, если нужно */
 .positive {
-    color: var(--positive);
+    color: var(--color-pos);
 }
 
 .negative {
-    color: var(--negative);
+    color: var(--color-neg);
 }
 
-/* Кнопка [Copy] */
+/* Компактная кнопка [Copy] для ячеек таблицы с эффектом прозрачности */
 .copyBtn {
     font-size: 11px;
-    padding: 0px 2px;
+    padding: 0 2px;
     opacity: 0.5;
     background: none;
     border: none;
@@ -34,14 +35,15 @@
     font-family: inherit;
     transition:
         transform 0.1s ease,
-        color 0.1s ease;
+        color 0.1s ease,
+        opacity 0.1s ease;
 }
 
 .copyBtn:hover {
     opacity: 1;
 }
 
-/* Зеленый фидбек успешного копирования */
+/* Зеленый фидбек успешного копирования с эффектом микро-толчка scale */
 .copyBtnCopied {
     color: #00ff88 !important;
     transform: scale(1.1);

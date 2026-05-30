@@ -1,9 +1,8 @@
-// components-generic/inputReset.tsx
+// ./src/components-generic/inputReset.tsx
 import styles from './css/inputNumber.module.css';
-import { IInputProps } from '@/src/types/frontInterfaces'; // Импортируем расширенный интерфейс
+import { IInputProps } from '@/src/types/frontInterfaces';
 
 interface Props {
-    // Вместо кастомного объекта со строкой, используем строго единый тип проекта
     options: IInputProps;
 }
 
@@ -17,7 +16,6 @@ export default function InputReset({ options }: Props) {
                     id={options.alias}
                     type="reset"
                     name={options.inputName}
-                    // Нативный HTML-атрибут принимает string | number, типы теперь совпадают
                     defaultValue={options.defaultValue}
                 />
             </label>

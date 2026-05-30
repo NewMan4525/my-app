@@ -1,32 +1,47 @@
+/* ./src/app/components-generic/css/inputRadio.module.css */
+
 .input_container {
-    width: 100%;
+    width: var(--radio-container-width);
     display: flex;
     flex-direction: column;
     align-items: center;
+    background: transparent;
 }
+
 .groupNameInputOption {
     display: block;
+    color: var(
+        --text-primary
+    ); /* Цвет комментариев/параметров для заголовка группы */
 }
 
 .input_container,
 .options_wrapper {
-    margin-top: 5%;
-    width: 100%;
+    margin-top: var(--radio-margin-top);
+    width: var(--radio-container-width);
     display: flex;
     justify-content: center;
+    background: transparent;
 }
 
 .inputOption {
-    display: none;
+    display: none; /* Скрываем нативный кружок */
 }
 
-/* Стили для обычного (невыбранного) label */
+/* Стили для обычного уровня навыка */
 .labelInputOption {
     cursor: pointer;
-    margin: 0 1%;
+    margin: var(--radio-label-margin);
+    color: var(--text-secondary); /* Цвет переменных по умолчанию */
+    transition: var(--transition-fast);
 }
 
-/* Находим .labelInputOption, внутри которого есть отмеченный .inputOption */
+.labelInputOption:hover {
+    color: var(--hover-text); /* Фиолетовый при наведении */
+}
+
+/* Аппаратное переключение активного навыка (lvl) на фиолетовый цвет через :has */
 .labelInputOption:has(.inputOption:checked) {
-    color: var(--hover-text);
+    color: var(--hover-text) !important;
+    font-weight: bold;
 }

@@ -4,67 +4,65 @@
     width: 100%;
     min-height: 100vh;
     padding-bottom: 60px;
+    background-color: var(--bg-primary);
 }
 
 .itemName {
     font-weight: bold;
-    color: #ffffff;
+    color: var(--text-secondary); /* Цвет переменных VS Code */
 }
 
+/* Карточка без бэкграунда и рамок */
 .uploadCard {
-    background-color: #11141a;
-    border: 1px solid #2c3545;
-    padding: 20px;
-    border-radius: 4px;
+    background-color: var(--bg-primary);
+    border: none;
+    padding: var(--war-padding-card);
     font-family: monospace;
 }
 
 .uploadCard h3 {
     margin: 0 0 16px 0;
-    color: #ffffff;
+    color: var(--text-secondary);
     font-size: 1.1rem;
 }
 
-/* Конструктор пути со встроенным инпутом */
+/* Конструктор пути полностью сливается с фоном */
 .pathBuilderRow {
     display: flex;
     align-items: center;
-    background-color: #161b24;
-    padding: 8px 12px;
-    border-radius: 2px;
-    border: 1px dashed #232d3d;
+    background-color: var(--bg-primary);
+    padding: var(--war-padding-row);
+    border: none;
     font-size: 12px;
     width: 100%;
     max-width: fit-content;
 }
 
 .pathText {
-    color: #8899a6;
+    color: var(--text-primary); /* Цвет параметров/комментариев */
     white-space: pre;
 }
 
 .inlineUserInput {
-    background: #202632;
-    border: 1px solid #3d4b63;
-    color: #ffaa00;
+    background: var(--bg-primary);
+    border: none;
+    color: var(--text-secondary);
     padding: 2px 6px;
     font-family: monospace;
     font-size: 12px;
-    border-radius: 2px;
     width: 110px;
     text-align: center;
 }
 
 .inlineUserInput:focus {
     outline: none;
-    border-color: #5599ff;
-    background: #1c2330;
+    color: var(--hover-text); /* Фиолетовый при фокусе */
 }
 
 .inlineCopyBtn {
     background: none;
     border: none;
-    color: #5599ff;
+    color: var(--text-secondary);
     cursor: pointer;
     font-family: monospace;
     font-size: 12px;
@@ -74,7 +72,7 @@
 }
 
 .inlineCopyBtn:hover {
-    color: #ffffff;
+    color: var(--hover-text); /* Фиолетовый ховер */
 }
 
 .actionRow {
@@ -85,13 +83,12 @@
 }
 
 .fileInput {
-    background: #161b24;
-    border: 1px solid #3d4b63;
+    background: var(--bg-primary);
+    border: none;
     padding: 6px 10px;
-    color: #ffffff;
+    color: var(--text-secondary);
     font-family: monospace;
     font-size: 0.85rem;
-    border-radius: 2px;
     cursor: pointer;
 }
 
@@ -99,40 +96,37 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+/* Продолжение файла ./src/app/war/war.module.css */
 
 .uploadBtn {
-    background-color: #2a364d;
-    border: 1px solid #5599ff;
-    color: #ffffff;
+    background-color: var(--bg-primary);
+    border: none;
+    color: var(--text-secondary);
     font-family: monospace;
     font-size: 0.85rem;
     padding: 8px 16px;
-    border-radius: 2px;
     cursor: pointer;
-    transition: background-color 0.1s ease;
+    transition: color 0.1s ease;
 }
 
 .uploadBtn:hover:not(:disabled) {
-    background-color: #3b4e70;
+    color: var(--hover-text);
 }
 
 .uploadBtn:disabled {
     opacity: 0.4;
-    border-color: #3d4b63;
     cursor: not-allowed;
 }
 
-/* Стили заголовков таблиц ордеров */
 .tableHeading {
     font-family: monospace;
     font-size: 13px;
-    color: #8899a6;
+    color: var(--text-primary);
     margin: 0 0 10px 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* Контейнеры ячеек цен */
 .priceCellContainer {
     display: flex;
     align-items: center;
@@ -142,95 +136,87 @@
 
 .priceValue {
     font-family: monospace;
+    color: var(--text-secondary);
 }
 
-/* Кнопка [Copy] */
 .copyBtn {
     font-size: 11px;
     padding: 0px 2px;
     opacity: 0.5;
     background: none;
     border: none;
-    color: #5599ff;
+    color: var(--text-secondary);
     cursor: pointer;
     font-family: inherit;
     transition:
         transform 0.1s ease,
-        color 0.1s ease;
+        color 0.1s ease,
+        opacity 0.1s ease;
 }
 
 .copyBtn:hover {
     opacity: 1;
-    color: #ffffff;
+    color: var(--hover-text);
 }
 
-/* Анимация и цвет успешного копирования */
 .copyBtnCopied {
     color: #00ff88 !important;
     transform: scale(1.1);
     opacity: 1 !important;
 }
 
-/* Красный алерт для перебитых позиций */
 .changedAlert {
-    color: var(--negative, #ff4444);
+    color: var(--negative);
     font-weight: bold;
     font-size: 11px;
     letter-spacing: 0.5px;
-    background-color: rgba(255, 68, 68, 0.1);
-    padding: 2px 6px;
-    border-radius: 2px;
-    border: 1px solid rgba(255, 68, 68, 0.2);
+    background: transparent;
+    padding: 2px 0;
     display: inline-block;
 }
+
 .radarBtn {
-    background-color: #1c2430;
-    border: 1px solid #3d4b63;
-    color: #8899a6;
+    background-color: var(--bg-primary);
+    border: none;
+    color: var(--text-secondary);
     font-family: monospace;
     font-size: 0.85rem;
     padding: 8px 16px;
-    border-radius: 2px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
 }
 
 .radarBtn:hover {
-    border-color: #5599ff;
-    color: #ffffff;
+    color: var(--hover-text);
 }
 
-/* Зеленое светящееся состояние работающего чекера */
 .radarActive {
-    background-color: rgba(0, 255, 136, 0.05) !important;
-    border-color: #00ff88 !important;
-    color: #00ff88 !important;
+    background-color: var(--bg-primary) !important;
+    color: var(--hover-text) !important;
     font-weight: bold;
-    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
     animation: radarPulse 2s infinite ease-in-out;
 }
 
 @keyframes radarPulse {
     0% {
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        opacity: 0.8;
     }
     50% {
-        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        opacity: 1;
+        text-shadow: 0 0 8px var(--hover-text);
     }
     100% {
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        opacity: 0.8;
     }
 }
-/* Кнопка-алерт OUTBID (активное состояние) */
+
 .changedAlertBtn {
-    color: var(--negative, #ff4444);
+    color: var(--negative);
     font-weight: bold;
-    font-size: 10px; /* Уменьшено до 10px для стабильной высоты строк */
+    font-size: 10px;
     letter-spacing: 0.5px;
-    background-color: rgba(255, 68, 68, 0.1);
-    padding: 2px 6px;
-    border-radius: 2px;
-    border: 1px solid rgba(255, 68, 68, 0.2);
+    background: transparent;
+    border: none;
     cursor: pointer;
     font-family: monospace;
     min-width: 75px;
@@ -238,23 +224,20 @@
     height: 20px;
     line-height: 14px;
     box-sizing: border-box;
-    transition: background-color 0.1s ease;
+    transition: color 0.1s ease;
 }
 
 .changedAlertBtn:hover {
-    background-color: rgba(255, 68, 68, 0.2);
+    color: var(--hover-text);
 }
 
-/* Синяя кнопка-заглушка IGNORED для проигнорированных алертов */
 .ignoredBadge {
-    color: #5599ff;
+    color: var(--text-primary);
     font-weight: bold;
-    font-size: 10px; /* Уменьшено до 10px для стабильной высоты строк */
+    font-size: 10px;
     letter-spacing: 0.5px;
-    background-color: rgba(85, 153, 255, 0.05);
-    padding: 2px 6px;
-    border-radius: 2px;
-    border: 1px solid rgba(85, 153, 255, 0.15);
+    background: transparent;
+    border: none;
     cursor: pointer;
     font-family: monospace;
     min-width: 75px;
@@ -262,44 +245,41 @@
     height: 20px;
     line-height: 14px;
     box-sizing: border-box;
-    transition: background-color 0.1s ease;
+    transition: color 0.1s ease;
 }
 
 .ignoredBadge:hover {
-    background-color: rgba(85, 153, 255, 0.15);
+    color: var(--hover-text);
 }
-/* Базовый контейнер группы управления */
+
 .statusControlGroup {
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 16px; /* Фиксированная высота ячейки для защиты от прыжков верстки */
+    height: 16px;
 }
 
-/* Космический стильный чекбокс EVE Online */
 .warCheckbox {
     width: 14px;
     height: 14px;
-    accent-color: #00ff88;
+    accent-color: var(--hover-text);
     cursor: pointer;
-    border: 1px solid #3d4b63;
-    background-color: #11141a;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--inactive);
 }
 
-/* Приглушенная кнопка выполненного ордера (синий цвет текста) */
 .checkedMutedBadge {
-    color: #8899a6;
+    color: var(--text-primary);
     font-weight: normal;
     font-size: 11px;
     letter-spacing: 0.5px;
-    background-color: rgba(136, 153, 166, 0.05);
-    padding: 2px 6px;
-    border-radius: 2px;
-    border: 1px solid rgba(136, 153, 166, 0.15);
+    background: transparent;
+    border: none;
     font-family: monospace;
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
 }
+
 .changedAlertBtn:empty,
 .ignoredBadge:empty {
     background: transparent !important;
@@ -307,4 +287,42 @@
     box-shadow: none !important;
     pointer-events: none;
     cursor: default;
+}
+/* В самый конец ./src/app/war/war.module.css */
+
+/* ЭФФЕКТ КОНЦЕНТРАЦИИ НА ВРАЖЕСКИХ СТАВКАХ СТРОГО ДЛЯ СТРАНИЦЫ WAR */
+
+/* 1. Находим таблицы ИМЕННО внутри секции .warPageSection и приглушаем все строки */
+.warPageSection :global(.marketTable) tbody tr {
+    opacity: 0.35 !important;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease;
+}
+
+/* 2. Подсвечиваем строку на 100% яркости, только если внутри неё горит локальная кнопка OUTBID */
+.warPageSection
+    :global(.marketTable)
+    tbody
+    tr:has(.changedAlertBtn:not(:empty)) {
+    opacity: 1 !important;
+}
+
+/* 3. Возвращаем яркость при наведении мыши на строку лога для чтения имени предмета */
+.warPageSection :global(.marketTable) tbody tr:hover {
+    opacity: 0.9 !important;
+}
+/* Продолжение фокуса в ./src/app/war/war.module.css */
+
+/* 4. Если на строке стоят дата-атрибуты ручного выполнения или игнорирования, 
+   принудительно гасим её до минимума (20% яркости), даже если там был аутбид */
+.warPageSection :global(.marketTable) tbody tr[data-row-done],
+.warPageSection :global(.marketTable) tbody tr[data-status-ignored] {
+    opacity: 0.2 !important;
+}
+
+/* 5. Интеграция с ховером: отработанные строки при наведении слегка подсвечиваются до 45% */
+.warPageSection :global(.marketTable) tbody tr[data-row-done]:hover,
+.warPageSection :global(.marketTable) tbody tr[data-status-ignored]:hover {
+    opacity: 0.45 !important;
 }

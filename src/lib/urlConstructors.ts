@@ -1,39 +1,36 @@
 // ./src/lib/urlConstructors.ts
 import { BASE_URL } from './constants';
 import { INumObj } from '@/src/types/interfaces';
+import { buildUrlsFromItems } from '@/src/lib/helpers';
 
-export const urlsConstructor = {
-    orders(currentRegionId: number, quantity: number): string[] {
-        const madeUrl = `${BASE_URL}markets/${currentRegionId}/orders?order_type=all`;
-        return Array.from(
-            { length: quantity },
-            (_, i) => `${madeUrl}&page=${i + 1}`,
-        );
-    },
-    history(items: INumObj[], currentRegionId: number): string[] {
-        const madeUrl = `${BASE_URL}markets/${currentRegionId}/history?type_id=`;
-        return Array.from(
-            { length: items.length },
-            (_, i) => madeUrl + items[i].type_id,
-        );
-    },
-    info(items: INumObj[]): string[] {
-        const madeUrl = `${BASE_URL}latest/universe/types/`;
-        return Array.from(
-            { length: items.length },
-            (_, i) => madeUrl + items[i].type_id,
-        );
-    },
-    /**
-     * Точечный URL для конкретного типа и направления (buy/sell).
-     * Качает только нужное направление стакана для жесткой экономии входящего трафика.
-     */
-    warOrders(
-        currentRegionId: number,
-        typeId: number,
-        orderType: 'buy' | 'sell',
-        page: number = 1,
-    ): string {
-        return `${BASE_URL}markets/${currentRegionId}/orders?order_type=${orderType}&page=${page}&type_id=${typeId}`;
-    },
-};
+export function ordersUrlConstructor(
+    currentRegionId: number,
+    quantity: number,
+): string[] {
+    const u = `${BASE_URL}markets/${currentRegionId}/orders?order_type=all&page=`;
+    const r = new Array<string>(quantity);
+    for (let i = 0; i < quantity; i++) r[i] = u + (i + 1);
+    return r;
+}
+
+export function historyUrlConstructor(
+    items: INumObj[],
+    currentRegionId: number,
+): string[] {
+    const u = `${BASE_URL}markets/${currentRegionId}/history?type_id=`;
+    return buildUrlsFromItems(u, items);
+}
+
+export function infoUrlConstructor(items: INumObj[]): string[] {
+    const u = `${BASE_URL}latest/universe/types/`;
+    return buildUrlsFromItems(u, items);
+}
+
+export function warUrlConstructor(
+    currentRegionId: number,
+    typeId: number,
+    orderType: 'buy' | 'sell',
+    page: number = 1,
+): string {
+    return `${BASE_URL}markets/${currentRegionId}/orders?order_type=${orderType}&page=${page}&type_id=${typeId}`;
+}

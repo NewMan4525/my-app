@@ -1,42 +1,81 @@
+/* ./src/app/components-feature/css/header.module.css */
 #header {
-  padding-top: 10px;
+    padding-top: var(--header-padding-top);
+    background-color: var(--bg-primary); /* Сливается с фоном сайта */
 }
 
 .container {
-  background-color: var(--bg-secondary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 15px;
-  position: relative;
-  z-index: 2;
+    background-color: var(--bg-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--header-container-padding);
+    position: relative;
+    z-index: 2;
+    border: none !important; /* Без рамок */
 }
 
 #header_version_wrapper,
 #header_options_wrapper {
-  display: flex;
-  height: 100%;
-  gap: 10px;
+    display: flex;
+    height: 100%;
+    gap: var(--header-gap);
 }
 
 #header_version_wrapper > span {
-  display: block;
-  top: 0;
+    display: block;
+    top: 0;
+    color: var(--text-primary);
 }
-/* #header_options_wrapper > div {
-  display: block;
-} */
+
 #page_header {
-  color: var(--text-primary);
-  font-size: 32px;
+    color: var(--text-secondary); /* Цвет переменных по умолчанию */
+    font-size: var(--header-title-size);
 }
+
 #nav {
-  width: 50%;
-  display: flex;
-  justify-content: space-between;
+    width: var(--header-nav-width);
+    display: flex;
+    justify-content: space-between;
 }
 
 .someClasslist {
-  cursor: default;
-  opacity: 0;
+    cursor: default;
+    opacity: 0;
+}
+
+/* ./src/app/components-feature/css/info_panel.module.css */
+.contentInfo {
+    position: relative;
+    width: 100%;
+    border-top: 1px dashed var(--inactive); /* Тонкий пунктир разделителя вместо сплошной рамки */
+    padding-top: var(--info-padding-top);
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--bg-primary);
+}
+
+.renderContent {
+    display: flex;
+    justify-content: space-around;
+    gap: var(--info-content-gap);
+    color: var(--text-secondary);
+}
+
+.infoPart h4 {
+    text-transform: uppercase;
+    font-size: var(--font-size-sm);
+    color: var(
+        --text-primary
+    ); /* Цвет комментариев/параметров для заголовков блоков */
+    margin-bottom: 6px;
+}
+
+.infoPart p {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+}
+
+.infoPart strong {
+    color: var(--text-primary);
 }

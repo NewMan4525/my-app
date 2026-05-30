@@ -1,13 +1,25 @@
+/* ./src/app/components-feature/css/info_panel.module.css */
+
+/* Токены геометрии информационной панели */
+:root {
+    --info-padding-top: 10px;
+    --info-content-gap: 20px;
+    --info-border-color: var(
+        --inactive
+    ); /* Заменили тестовый красный "red" на системный цвет темы */
+}
+
 .contentInfo {
     position: relative;
     width: 100%;
-    border-top: 1px solid red;
-    padding-top: 10px;
+    border-top: 1px solid var(--info-border-color);
+    padding-top: var(--info-padding-top);
     display: flex;
     justify-content: space-between;
 }
+
 .renderContent {
     display: flex;
     justify-content: space-around;
-    gap: 20px;
+    gap: var(--info-content-gap);
 }

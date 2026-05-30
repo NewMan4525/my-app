@@ -1,5 +1,6 @@
 // ./src/utils/classes.ts
-import { IInputProps } from '@/src/types/frontInterfaces';
+import { IInputProps, HTMLInputType } from '@/src/types/frontInterfaces';
+import { formatUnderscores, toTitleCase } from '@/src/utils/helpers';
 
 interface IOption {
     groupName?: string;
@@ -9,8 +10,9 @@ interface IOption {
     defaultValue?: string | number;
     defaultChecked?: boolean;
 }
+
 interface IInputItem {
-    type: string;
+    type: HTMLInputType; // Исправлено: строго привязываем к валидным HTML-инпутам
     options: IOption[];
 }
 
@@ -19,25 +21,11 @@ export class InputsBlockOptionCreator {
     inputsProps: IInputProps[][];
 
     constructor(headerText: string, inputs: IInputItem[]) {
-        this.h3 = this.prepareH3(headerText);
+        this.h3 = formatUnderscores(headerText).toUpperCase();
 
         this.inputsProps = inputs.map((input, i) =>
             this.optionSet(headerText, input, i),
         );
-    }
-
-    private setCapitalLetter(w: string): string {
-        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-    }
-
-    private prepareH3(headerText: string): string {
-        return headerText.replace(/_/g, ' ').toUpperCase();
-    }
-
-    private prepareLabelText(headerText: string): string {
-        return headerText
-            .replace(/_/g, ' ')
-            .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
     }
 
     private optionSet(
@@ -46,10 +34,12 @@ export class InputsBlockOptionCreator {
         key: number,
     ): IInputProps[] {
         return input.options.map((it) => ({
-            groupName: this.prepareLabelText(it.groupName ?? ''),
-            inputType: input.type,
-            labelText: this.prepareLabelText(it.text ?? headerText),
-            // ВОЗВРАЩАЕМ ОРИГИНАЛЬНУЮ СТРОГУЮ СБОРКУ: Индекс key критически важен для MPA-разделения групп
+            groupName:
+                it.groupName !== undefined && it.groupName !== null
+                    ? toTitleCase(it.groupName)
+                    : '',
+            inputType: input.type, // Теперь типы совпадают идеально без cast-операторов
+            labelText: toTitleCase(it.text ?? headerText),
             inputName: it.name + String(key),
             alias: it.text
                 ? headerText + '_' + it.text

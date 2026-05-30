@@ -1,11 +1,36 @@
+/* ./src/app/components-generic/css/input.module.css */
+
 .flex_box {
-  width: 50%;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 10%;
+    width: var(--input-flexbox-width);
+    display: flex;
+    justify-content: flex-end;
+    padding-right: var(--input-padding-right);
+    background: transparent;
 }
+
 .description_input_wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: var(--input-gap);
+    color: var(--text-secondary); /* Цвет переменных по умолчанию */
+}
+
+/* ./src/app/components-generic/css/inputNumber.module.css */
+
+.input_container {
+    width: var(--input-num-width);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+}
+
+.labelInputNumber {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.inputNumber {
+    margin: var(--input-num-margin);
+    /* Все фоны и рамки полностью стёрты, наследуются правила globals.css */
 }

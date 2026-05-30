@@ -4,7 +4,6 @@
 import dynamic from 'next/dynamic';
 import styles from './user.module.css';
 
-// Импортируем форму динамически с полным отключением серверного рендеринга (SSR: false)
 const UserFormNoSSR = dynamic(
     () => import('@/src/components-feature/userForm'),
     {

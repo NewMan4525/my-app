@@ -1,15 +1,22 @@
 // ./src/lib/warUtils.ts
-
 import { IMyUploadedOrder } from '@/src/types/interfaces';
+import { splitCsvLine } from '@/src/lib/helpers';
 
 /**
  * Отказоустойчивый построчный парсинг CSV файла Marketlogs игры EVE Online
  */
 export function parseMarketLogCsv(fileContent: string): IMyUploadedOrder[] {
     const lines = fileContent.split(/\r?\n/);
-    if (lines.length < 2) return [];
+    const linesLen = lines.length;
+    if (linesLen < 2) return [];
 
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const firstLineCols = lines[0].split(',');
+    const headersLen = firstLineCols.length;
+    const headers = new Array<string>(headersLen);
+    for (let i = 0; i < headersLen; i++) {
+        headers[i] = firstLineCols[i].trim().toLowerCase();
+    }
+
     const orderIDIdx = headers.indexOf('orderid');
     const typeIDIdx = headers.indexOf('typeid');
     const bidIdx = headers.indexOf('bid');
@@ -33,24 +40,32 @@ export function parseMarketLogCsv(fileContent: string): IMyUploadedOrder[] {
     }
 
     const parsedOrders: IMyUploadedOrder[] = [];
+    const maxRequiredIdx = Math.max(
+        typeIDIdx,
+        bidIdx,
+        priceIdx,
+        orderIDIdx,
+        stationIDIdx,
+    );
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 1; i < linesLen; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const cols = line.split(',');
-        if (
-            cols.length <=
-            Math.max(typeIDIdx, bidIdx, priceIdx, orderIDIdx, stationIDIdx)
-        )
-            continue;
+        // Переиспользуем микрофункцию безопасного сплита из хелперов
+        const cols = splitCsvLine(line);
+        if (cols.length <= maxRequiredIdx) continue;
 
         const typeID = parseInt(cols[typeIDIdx], 10);
         const price = parseFloat(cols[priceIdx]);
-        const sysId = cols[solarSystemIDIdx]?.trim();
-        const regId = cols[regionIDIdx]?.trim();
+        const sysId = cols[solarSystemIDIdx];
+        const regId = cols[regionIDIdx];
 
         if (!sysId || !regId || isNaN(typeID) || isNaN(price)) continue;
+
+        const cleanSysId = sysId.trim();
+        const cleanRegId = regId.trim();
+        if (!cleanSysId || !cleanRegId) continue;
 
         parsedOrders.push({
             orderID: cols[orderIDIdx].trim(),
@@ -60,8 +75,8 @@ export function parseMarketLogCsv(fileContent: string): IMyUploadedOrder[] {
             stationName: cols[stationNameIdx]
                 ? cols[stationNameIdx].trim()
                 : '',
-            solarSystemID: sysId,
-            regionID: regId,
+            solarSystemID: cleanSysId,
+            regionID: cleanRegId,
             bid: cols[bidIdx].toLowerCase() === 'true',
             price,
             volRemaining: parseFloat(cols[volRemainingIdx]) || 0,
@@ -77,18 +92,25 @@ export function buildGroupedOrdersMap(
     orders: IMyUploadedOrder[],
 ): Map<string, IMyUploadedOrder[]> {
     const groupedMap = new Map<string, IMyUploadedOrder[]>();
+    const len = orders.length;
 
-    for (const order of orders) {
+    for (let i = 0; i < len; i++) {
+        const order = orders[i];
         const key = `${order.typeID}-${order.bid}`;
-        if (!groupedMap.has(key)) groupedMap.set(key, []);
-        groupedMap.get(key)!.push(order);
+        let list = groupedMap.get(key);
+        if (list === undefined) {
+            list = [];
+            groupedMap.set(key, list);
+        }
+        list.push(order);
     }
 
-    groupedMap.forEach((list, key) => {
-        const isBuy = key.endsWith('-true');
-        // BUY: Самый дорогой закуп вверх. SELL: Самый дешевый селл вверх.
+    for (const [key, list] of groupedMap.entries()) {
+        // Ультрабыстрая проверка: 'e' на конце означает 'true' (BUY-ордер)
+        const isBuy = key.charCodeAt(key.length - 1) === 101;
+
         list.sort((a, b) => (isBuy ? b.price - a.price : a.price - b.price));
-    });
+    }
 
     return groupedMap;
 }

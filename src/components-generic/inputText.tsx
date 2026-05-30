@@ -1,12 +1,10 @@
+// ./src/components-generic/inputText.tsx
+import { IInputProps } from '@/src/types/frontInterfaces';
+
 interface Props {
-    options: {
-        inputType: string;
-        labelText: string;
-        inputName: string;
-        alias: string;
-        defaultValue?: string;
-    };
+    options: IInputProps<string>; // Используем строгий глобальный дженерик-интерфейс, зафиксированный на string
 }
+
 export default function InputText({ options }: Props) {
     return (
         <label htmlFor={options.alias}>

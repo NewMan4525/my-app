@@ -1,6 +1,5 @@
 // ./src/app/war/columnsConfig.tsx
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ITableColumn } from '@/src/components-generic/table';
 import { IWarItem } from '@/src/types/interfaces';
 import styles from './war.module.css';
@@ -48,25 +47,22 @@ const handleStatusDomToggle = (
 };
 
 interface IConfigProps {
-    updateNonce: string; // <-- Уникальный маркер обновления данных
+    updateNonce: string;
     executeCopy: (
         e: React.MouseEvent<HTMLButtonElement>,
         text: string,
         type: 'buy' | 'sell' | 'name',
     ) => void;
 }
-
+// 2
 export const useWarColumnsConfiguration = ({
     updateNonce,
     executeCopy,
 }: IConfigProps) => {
-    const renderStatusCell = (item: IWarItem) => {
+    // Исправлено: Обычная именованная функция рендера вместо анонимной стрелки в useMemo
+    function renderStatusCell(item: IWarItem) {
         return (
             <div className={styles.statusControlGroup}>
-                {/* 
-                  updateNonce гарантирует смену ключа при КАЖДОМ ответе сервера, 
-                  что аппаратно уничтожает старый чекбокс и монтирует новый со значением false.
-                */}
                 <input
                     key={`${updateNonce}-${item.orderID}`}
                     type="checkbox"
@@ -86,107 +82,114 @@ export const useWarColumnsConfiguration = ({
                 </button>
             </div>
         );
-    };
+    }
+    // Защищаем массивы колонок от паразитных пересозданий при рендерах страницы War
+    // Защищаем массивы колонок от паразитных пересозданий
+    const sellColumns: ITableColumn<IWarItem>[] = useMemo(
+        () => [
+            {
+                key: 'changed',
+                header: 'changed',
+                sortable: true,
+                sortPath: 'status',
+                render: renderStatusCell,
+            },
+            {
+                key: 'sell',
+                header: 'sell',
+                sortable: true,
+                sortPath: 'sell',
+                render: (item) => (
+                    <div className={styles.priceCellContainer}>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={(e) =>
+                                executeCopy(e, item.sell.toString(), 'sell')
+                            }
+                        >
+                            [Copy]
+                        </button>
+                        <span className={styles.priceValue}>
+                            {item.sell.toLocaleString()}
+                        </span>
+                    </div>
+                ),
+            },
+            {
+                key: 'name',
+                header: 'Item Name',
+                sortable: true,
+                sortPath: 'name',
+                render: (item) => (
+                    <div className={styles.priceCellContainer}>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={(e) => executeCopy(e, item.name, 'name')}
+                        >
+                            [Copy]
+                        </button>
+                        <span className={styles.itemName}>{item.name}</span>
+                    </div>
+                ),
+            },
+        ],
+        [updateNonce, executeCopy],
+    ); // Зависимость от updateNonce перенесена сюда
 
-    const sellColumns: ITableColumn<IWarItem>[] = [
-        {
-            key: 'changed',
-            header: 'changed',
-            sortable: true,
-            sortPath: 'status',
-            render: renderStatusCell,
-        },
-        {
-            key: 'sell',
-            header: 'sell',
-            sortable: true,
-            sortPath: 'sell',
-            render: (item) => (
-                <div className={styles.priceCellContainer}>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={(e) =>
-                            executeCopy(e, item.sell.toString(), 'sell')
-                        }
-                    >
-                        [Copy]
-                    </button>
-                    <span className={styles.priceValue}>
-                        {item.sell.toLocaleString()}
-                    </span>
-                </div>
-            ),
-        },
-        {
-            key: 'name',
-            header: 'Item Name',
-            sortable: true,
-            sortPath: 'name',
-            render: (item) => (
-                <div className={styles.priceCellContainer}>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={(e) => executeCopy(e, item.name, 'name')}
-                    >
-                        [Copy]
-                    </button>
-                    <span className={styles.itemName}>{item.name}</span>
-                </div>
-            ),
-        },
-    ];
-
-    const buyColumns: ITableColumn<IWarItem>[] = [
-        {
-            key: 'changed',
-            header: 'changed',
-            sortable: true,
-            sortPath: 'status',
-            render: renderStatusCell,
-        },
-        {
-            key: 'buy',
-            header: 'buy',
-            sortable: true,
-            sortPath: 'buy',
-            render: (item) => (
-                <div className={styles.priceCellContainer}>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={(e) =>
-                            executeCopy(e, item.buy.toString(), 'buy')
-                        }
-                    >
-                        [Copy]
-                    </button>
-                    <span className={styles.priceValue}>
-                        {item.buy.toLocaleString()}
-                    </span>
-                </div>
-            ),
-        },
-        {
-            key: 'name',
-            header: 'Item Name',
-            sortable: true,
-            sortPath: 'name',
-            render: (item) => (
-                <div className={styles.priceCellContainer}>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={(e) => executeCopy(e, item.name, 'name')}
-                    >
-                        [Copy]
-                    </button>
-                    <span className={styles.itemName}>{item.name}</span>
-                </div>
-            ),
-        },
-    ];
+    const buyColumns: ITableColumn<IWarItem>[] = useMemo(
+        () => [
+            {
+                key: 'changed',
+                header: 'changed',
+                sortable: true,
+                sortPath: 'status',
+                render: renderStatusCell,
+            },
+            {
+                key: 'buy',
+                header: 'buy',
+                sortable: true,
+                sortPath: 'buy',
+                render: (item) => (
+                    <div className={styles.priceCellContainer}>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={(e) =>
+                                executeCopy(e, item.buy.toString(), 'buy')
+                            }
+                        >
+                            [Copy]
+                        </button>
+                        <span className={styles.priceValue}>
+                            {item.buy.toLocaleString()}
+                        </span>
+                    </div>
+                ),
+            },
+            {
+                key: 'name',
+                header: 'Item Name',
+                sortable: true,
+                sortPath: 'name',
+                render: (item) => (
+                    <div className={styles.priceCellContainer}>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={(e) => executeCopy(e, item.name, 'name')}
+                        >
+                            [Copy]
+                        </button>
+                        <span className={styles.itemName}>{item.name}</span>
+                    </div>
+                ),
+            },
+        ],
+        [updateNonce, executeCopy],
+    );
 
     return { sellColumns, buyColumns };
 };

@@ -1,3 +1,4 @@
+// ./src/components-generic/link.tsx
 import styles from './css/link.module.css';
 
 interface LinkProps {

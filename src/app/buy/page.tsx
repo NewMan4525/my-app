@@ -1,7 +1,7 @@
 // ./src/app/buy/page.tsx
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './buy.module.css';
 import Overview from '@/src/components-generic/overview';
@@ -10,8 +10,9 @@ import {
     getFromStorage,
     getFromSession,
     setToSession,
-} from '@/src/utils/storage';
-import { calculateModifiedIsk } from '@/src/utils/clipboardModify';
+    calculateModifiedIsk,
+    copyToClipboardWithFeedback,
+} from '@/src/utils/helpers';
 import {
     ITradeSettings,
     IUserStats,
@@ -35,17 +36,12 @@ const InfoPanelNoSSR = dynamic(
 export default function Buy() {
     const [isOptionsVisible, setIsOptionsVisible] = useState(true);
     const [isPending, startTransition] = useTransition();
-
-    // 1. Инициализируем стейт ВСЕГДА пустым массивом (одинаково для сервера и клиента во избежание сбоев гидратации)
     const [marketItems, setMarketItems] = useState<IMarketItem[]>([]);
 
     useEffect(() => {
         const handleToggleOptions = () => setIsOptionsVisible((prev) => !prev);
         window.addEventListener('toggle-market-options', handleToggleOptions);
 
-        // 2. БЕЗОПАСНАЯ АСИНХРОННАЯ ПОДГРУЗКА ИЗ СЕССИИ:
-        // Заворачиваем в setTimeout, чтобы вынести setState из синхронного потока эффекта.
-        // Строгий линтер проекта полностью доволен, а каскадные рендеры исключены.
         const timer = setTimeout(() => {
             const savedItems = getFromSession<IMarketItem[]>(
                 'cached_market_items',
@@ -70,7 +66,6 @@ export default function Buy() {
         type: 'name' | 'buy' | 'sell',
     ) => {
         e.stopPropagation();
-        const button = e.currentTarget;
 
         let finalDataToClipboard = text;
         if (type === 'buy') {
@@ -79,121 +74,116 @@ export default function Buy() {
             finalDataToClipboard = calculateModifiedIsk(Number(text), 'minus');
         }
 
-        navigator.clipboard
-            .writeText(finalDataToClipboard)
-            .then(() => {
-                const originalText = button.textContent;
-                button.textContent = '[Copied]';
-                button.classList.add(styles.copyBtnCopied);
-
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.classList.remove(styles.copyBtnCopied);
-                }, 1000);
-            })
-            .catch((err) => {
-                console.error('Failed to copy text:', err);
-            });
+        // Вызов оптимизированного глобального UI-хелпера
+        copyToClipboardWithFeedback(
+            e.currentTarget,
+            finalDataToClipboard,
+            styles.copyBtnCopied,
+        );
     };
-
-    const buyColumns: ITableColumn<IMarketItem>[] = [
-        {
-            key: 'vol',
-            header: 'vol',
-            sortable: true,
-            sortPath: 'vol',
-            render: (item) => item.vol.toLocaleString(),
-        },
-        {
-            key: 'buy',
-            header: 'buy',
-            sortable: true,
-            sortPath: 'buy',
-            render: (item) => (
-                <>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        title="Copy modified buy price (+1 step)"
-                        onClick={(e) =>
-                            executeCopy(e, item.buy.toString(), 'buy')
+    const buyColumns: ITableColumn<IMarketItem>[] = useMemo(
+        () => [
+            {
+                key: 'vol',
+                header: 'vol',
+                sortable: true,
+                sortPath: 'vol',
+                render: (item) => item.vol.toLocaleString(),
+            },
+            {
+                key: 'buy',
+                header: 'buy',
+                sortable: true,
+                sortPath: 'buy',
+                render: (item) => (
+                    <>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            title="Copy modified buy price (+1 step)"
+                            onClick={(e) =>
+                                executeCopy(e, item.buy.toString(), 'buy')
+                            }
+                        >
+                            [Copy]
+                        </button>
+                        <span style={{ marginLeft: '6px' }}>
+                            {item.buy.toLocaleString()}
+                        </span>
+                    </>
+                ),
+            },
+            {
+                key: 'sell',
+                header: 'sell',
+                sortable: true,
+                sortPath: 'sell',
+                render: (item) => (
+                    <>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            title="Copy modified sell price (-1 step)"
+                            onClick={(e) =>
+                                executeCopy(e, item.sell.toString(), 'sell')
+                            }
+                        >
+                            [Copy]
+                        </button>
+                        <span style={{ marginLeft: '6px' }}>
+                            {item.sell.toLocaleString()}
+                        </span>
+                    </>
+                ),
+            },
+            {
+                key: 'roi',
+                header: 'ROI',
+                sortable: true,
+                sortPath: 'roi',
+                render: (item) => (
+                    <span
+                        className={
+                            item.roi > 0 ? styles.positive : styles.negative
                         }
                     >
-                        [Copy]
-                    </button>
-                    <span style={{ marginLeft: '6px' }}>
-                        {item.buy.toLocaleString()}
+                        {item.roi}%
                     </span>
-                </>
-            ),
-        },
-        {
-            key: 'sell',
-            header: 'sell',
-            sortable: true,
-            sortPath: 'sell',
-            render: (item) => (
-                <>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        title="Copy modified sell price (-1 step)"
-                        onClick={(e) =>
-                            executeCopy(e, item.sell.toString(), 'sell')
-                        }
-                    >
-                        [Copy]
-                    </button>
-                    <span style={{ marginLeft: '6px' }}>
-                        {item.sell.toLocaleString()}
+                ),
+            },
+            {
+                key: 'name',
+                header: 'Name',
+                sortable: true,
+                sortPath: 'name',
+                render: (item) => (
+                    <>
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            title="Copy item name"
+                            onClick={(e) => executeCopy(e, item.name, 'name')}
+                        >
+                            [Copy]
+                        </button>
+                        <span style={{ marginLeft: '6px' }}>{item.name}</span>
+                    </>
+                ),
+            },
+            {
+                key: 'ipm',
+                header: 'IPM',
+                sortable: true,
+                sortPath: 'ipm',
+                render: (item) => (
+                    <span className={styles.positive}>
+                        {item.ipm.toLocaleString()}
                     </span>
-                </>
-            ),
-        },
-        {
-            key: 'roi',
-            header: 'ROI',
-            sortable: true,
-            sortPath: 'roi',
-            render: (item) => (
-                <span
-                    className={item.roi > 0 ? styles.positive : styles.negative}
-                >
-                    {item.roi}%
-                </span>
-            ),
-        },
-        {
-            key: 'name',
-            header: 'Name',
-            sortable: true,
-            sortPath: 'name',
-            render: (item) => (
-                <>
-                    <button
-                        type="button"
-                        className={styles.copyBtn}
-                        title="Copy item name"
-                        onClick={(e) => executeCopy(e, item.name, 'name')}
-                    >
-                        [Copy]
-                    </button>
-                    <span style={{ marginLeft: '6px' }}>{item.name}</span>
-                </>
-            ),
-        },
-        {
-            key: 'ipm',
-            header: 'IPM',
-            sortable: true,
-            sortPath: 'ipm',
-            render: (item) => (
-                <span className={styles.positive}>
-                    {item.ipm.toLocaleString()}
-                </span>
-            ),
-        },
-    ];
+                ),
+            },
+        ],
+        [],
+    );
 
     const handlePageClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
@@ -263,7 +253,6 @@ export default function Buy() {
                     <InfoPanelNoSSR isPending={isPending} />
                 </div>
             </Overview>
-
             <div className="container" style={{ marginTop: '20px' }}>
                 <Table<IMarketItem>
                     items={marketItems}

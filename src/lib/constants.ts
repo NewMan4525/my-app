@@ -1,4 +1,9 @@
-import { IHubs, ITIME } from '@/src/types/interfaces';
+import {
+    IHubs,
+    ITIME,
+    ITradeSettings,
+    IUserStats,
+} from '@/src/types/interfaces';
 
 export const HUBS: IHubs = {
     the_forge: {
@@ -64,8 +69,8 @@ export const HUBS: IHubs = {
         },
         owners: {
             corporation: {
-                alias: ' boundless_creation',
-                name: ' Boundless Creation',
+                alias: 'boundless_creation',
+                name: 'Boundless Creation',
             },
             faction: {
                 alias: 'minmatar',
@@ -102,3 +107,34 @@ export const TIME: ITIME = {
     day: 86400000,
 };
 export const USER_SETTINGS_KEY = 'user_settings';
+
+export const tradeSettings: ITradeSettings = {
+    region: 'the_forge',
+    time: 'month',
+    priceMin: 1,
+    priceMax: 3000000000,
+    marginMin: 15,
+    marginMax: 100,
+    volumeMin: 1,
+    volumeMax: 100,
+    ordersMin: 1,
+    ordersMax: 100,
+    TAX: 7.5,
+    FEES: 3,
+    marketPlaceBuyIsCitadel: true,
+    marketPlaceSellIsCitadel: false,
+};
+
+export const userStats: IUserStats = {
+    the_forge: { factionStand: 0, stationOwnerStand: 0 },
+    domain: { factionStand: 0, stationOwnerStand: 0 },
+    sinq_laison: { factionStand: 0, stationOwnerStand: 0 },
+    metropolis: { factionStand: 0, stationOwnerStand: 0 },
+    heimatar: { factionStand: 0, stationOwnerStand: 0 },
+};
+
+export const userSkills = {
+    broker_relationship: 0,
+    advanced_broker_relationship: 0,
+    accounting: 0,
+};

@@ -5,7 +5,7 @@ import {
     tradeSettings as defaultTradeSettings,
     userStats as defaultUserStats,
     userSkills as defaultUserSkills,
-} from '@/src/lib/settings';
+} from '@/src/lib/constants';
 import { ITradeSettings, IUserStats } from '@/src/types/interfaces';
 import { IUserSkills } from '@/src/types/frontInterfaces';
 import { initDb } from '@/src/lib/dbHandlers';
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     try {
         const body: IBuyRequestPayload = await request.json();
         initDb();
+
         if (!body || !body.tradeSettings) {
             return NextResponse.json(
                 { message: 'Missing tradeSettings in request body' },
@@ -33,12 +34,21 @@ export async function POST(request: NextRequest) {
             ...body.tradeSettings,
         };
 
-        // Безопасный глубокий мёрдж стендингов текущего запроса для предотвращения undefined ошибок
+        // Безопасный глубокий мёрдж стендингов через производительный цикл без Object.entries
         const activeUserStats: IUserStats = { ...defaultUserStats };
-        if (body.userStats) {
-            Object.entries(defaultUserStats).forEach(
-                ([hubKey, defaultHubValues]) => {
-                    const incomingHubValues = body.userStats[hubKey];
+        const incomingStats = body.userStats;
+
+        if (incomingStats) {
+            for (const hubKey in defaultUserStats) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        defaultUserStats,
+                        hubKey,
+                    )
+                ) {
+                    const defaultHubValues = defaultUserStats[hubKey];
+                    const incomingHubValues = incomingStats[hubKey];
+
                     activeUserStats[hubKey] = {
                         factionStand:
                             incomingHubValues?.factionStand ??
@@ -47,8 +57,8 @@ export async function POST(request: NextRequest) {
                             incomingHubValues?.stationOwnerStand ??
                             defaultHubValues.stationOwnerStand,
                     };
-                },
-            );
+                }
+            }
         }
 
         // Безопасное перекрытие скиллов персонажа текущего запроса

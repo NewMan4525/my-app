@@ -1,4 +1,4 @@
-// components-feature/header.tsx
+// ./src/components-feature/header.tsx
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -16,22 +16,20 @@ export default function Header() {
         { href: 'war', text: '0.01 isk war' },
     ];
 
-    // Функция-обработчик клика на шапке
     const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
 
-        // Проверяем, что кликнули именно по кнопке Options
-        if (target.tagName === 'BUTTON' && target.textContent === 'Options') {
-            if (pathname === '/buy') {
-                // Создаем и отправляем кастомное событие в рамках окна браузера
-                const event = new CustomEvent('toggle-market-options');
-                window.dispatchEvent(event);
-            }
+        // Оптимизировано под MPA: Ограничиваем отправку события только на целевом роуте /buy
+        if (
+            pathname === '/buy' &&
+            target.tagName === 'BUTTON' &&
+            target.getAttribute('value') === '#'
+        ) {
+            window.dispatchEvent(new CustomEvent('toggle-market-options'));
         }
     };
 
     return (
-        // Вешаем один обработчик на обертку шапки
         <header id={styles.header} onClick={handleHeaderClick}>
             <div className={`${styles.container} container`}>
                 <div id={styles.header_version_wrapper}>
@@ -46,7 +44,6 @@ export default function Header() {
                     ))}
                 </nav>
                 <div id={styles.header_options_wrapper}>
-                    {/* Компонент Button рендерит нативный <button>Options</button> */}
                     <Button value="#" text="Options" />
                 </div>
             </div>

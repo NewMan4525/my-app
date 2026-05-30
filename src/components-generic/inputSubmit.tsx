@@ -1,9 +1,9 @@
-// components-generic/inputSubmit.tsx
+// ./src/components-generic/inputSubmit.tsx
 import styles from './css/inputNumber.module.css';
 import { IInputProps } from '@/src/types/frontInterfaces';
 
 interface Props {
-    options: IInputProps; // Привязали к общему типу
+    options: IInputProps;
 }
 
 export default function InputSubmit({ options }: Props) {
@@ -17,7 +17,7 @@ export default function InputSubmit({ options }: Props) {
                     type="submit"
                     name={options.inputName}
                     defaultValue={options.defaultValue}
-                    data-action="save-options" // Добавляем маркер для делегирования
+                    data-action="save-options"
                 />
             </label>
         </div>

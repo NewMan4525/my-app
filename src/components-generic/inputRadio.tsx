@@ -1,28 +1,24 @@
+// ./src/components-generic/inputRadio.tsx
 import styles from './css/inputRadio.module.css';
+import { IInputProps } from '@/src/types/frontInterfaces';
 
 interface Props {
-    options:
-        | {
-              groupName?: string;
-              inputType: string;
-              labelText: string;
-              inputName: string;
-              alias: string;
-          }[]
-        | undefined;
-    value: number; // Текущий выбранный уровень (1-5)
-    onChange: (groupName: string, value: number) => void; // Колбэк
+    options: IInputProps<number>[] | undefined; // Используем строгий глобальный дженерик-интерфейс
+    value: number;
+    onChange: (name: string, value: number) => void;
 }
 
 export default function InputRadio({ options, value, onChange }: Props) {
-    const groupNameAttr = options?.[0]?.groupName ?? '';
+    if (!options || options.length === 0) return null;
+
+    const groupNameAttr = options[0].groupName ?? '';
 
     return (
         <div className={styles.input_container}>
             <span className={styles.groupNameInputOption}>{groupNameAttr}</span>
 
             <div className={styles.options_wrapper}>
-                {options?.map((item, i) => {
+                {options.map((item, i) => {
                     const currentLvl = i + 1;
                     return (
                         <label
@@ -37,7 +33,7 @@ export default function InputRadio({ options, value, onChange }: Props) {
                                 value={currentLvl}
                                 id={item.inputName + i}
                                 name={item.inputName}
-                                checked={value === currentLvl} // Меняем defaultChecked на checked
+                                checked={value === currentLvl}
                                 onChange={() =>
                                     onChange(item.inputName, currentLvl)
                                 }

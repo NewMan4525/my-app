@@ -1,23 +1,67 @@
+/* ./src/app/components-feature/css/inputsBlock.module.css */
 .input_block {
-    margin-bottom: 25px;
+    margin-bottom: var(--ib-margin-bottom);
+    background: transparent;
 }
 
 .input_block_header {
-    color: var(--text-secondary);
+    color: var(--text-primary); /* Цвет комментариев/параметров VS Code */
     text-transform: uppercase;
-    font-size: 16px;
-    margin-bottom: 1%;
-    padding-top: 1%;
-    border-top: 1px solid var(--inactive);
+    font-size: var(--ib-header-size);
+    margin-bottom: var(--ib-header-margin-bottom);
+    padding-top: var(--ib-header-padding-top);
+    border-top: 1px dashed var(--inactive); /* Тонкий пунктир-разделитель */
 }
 
 .inputs_flex {
     display: flex;
     justify-content: space-evenly;
 }
+
 .inputs_flexbox {
-    width: 50%;
+    width: var(--ib-flexbox-width);
     display: flex;
     justify-content: flex-end;
-    /* padding-right: 10%; */
+}
+
+/* ./src/app/components-feature/css/optionBar.module.css */
+.container {
+    position: relative;
+    padding-top: var(--ob-padding-top);
+    background-color: var(--bg-primary);
+}
+
+.h2 {
+    position: relative;
+    font-size: var(--ob-h2-size);
+    text-align: center;
+    margin-bottom: var(--ob-h2-margin-bottom);
+    color: var(--text-secondary); /* Цвет переменных */
+}
+
+/* ./src/app/user/user.module.css */
+.container {
+    padding-top: var(--user-form-padding-top);
+    background-color: var(--bg-primary);
+}
+
+.h2 {
+    font-size: var(--user-form-h2-size);
+    text-align: center;
+    margin-bottom: var(--user-form-h2-margin);
+    color: var(--text-secondary);
+}
+
+.input_stat_block {
+    padding: var(--user-form-block-padding);
+}
+
+.description_input_wrapper {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+}
+
+.description_input_wrapper > * {
+    display: block;
 }

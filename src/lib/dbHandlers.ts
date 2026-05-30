@@ -1,33 +1,30 @@
+// ./src/db/db.ts (или ваш путь к файлу БД)
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { ICacheData } from '@/src/types/interfaces';
+import { safeUnlinkSync } from '@/src/lib/helpers';
 
-// Абсолютный путь к файлу базы данных относительно корня проекта
 const dbPath = path.join(process.cwd(), './src/db/esi_cache.db');
 
-// ГАРАНТИЯ СУЩЕСТВОВАНИЯ ДИРЕКТОРИИ
-// Код выполняется один раз при первом импорте модуля сервером.
-// Это полностью предотвращает ошибку "directory does not exist".
 const dir = path.dirname(dbPath);
 if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
 }
 
-// Открываем ОДНО постоянное соединение на весь жизненный цикл серверного процесса Node.js.
-// Оно закроется автоматически самой операционной системой при остановке сервера.
 const db = new Database(dbPath);
 
-/**
- * Инициализация базы данных, оптимизация производительности и создание структуры таблиц.
- */
-export const initDb = (): void => {
-    // Настройки прагм для максимального быстродействия I/O операций в многопоточной среде
+// Ссылки на скомпилированные запросы (кэш стейтментов для максимальной производительности)
+let stmtGet: Database.Statement;
+let stmtSet: Database.Statement;
+let stmtDelete: Database.Statement;
+let stmtPurge: Database.Statement;
+
+export function initDb(): void {
     db.pragma('journal_mode = WAL');
     db.pragma('synchronous = NORMAL');
     db.pragma('page_size = 4096');
 
-    // Создаем таблицу кэша ESI, если база пустая
     db.exec(`
     CREATE TABLE IF NOT EXISTS esi_cache (
       key TEXT PRIMARY KEY,
@@ -36,29 +33,10 @@ export const initDb = (): void => {
       data TEXT
     )
   `);
-};
 
-// Запускаем инициализацию строго один раз при загрузке модуля в память сервера
-initDb();
-
-/**
- * Чтение записи из кэша по строковому ключу (URL запроса).
- * Больше не тратит время на открытие и закрытие файла базы данных.
- * @param key Строковый URL-адрес запроса к ESI API.
- * @returns Объект ICacheData или null, если запись не найдена.
- */
-export const getByKey = (key: string): ICacheData | null => {
-    const stmt = db.prepare('SELECT * FROM esi_cache WHERE key = ?');
-    const result = stmt.get(key) as ICacheData | undefined;
-    return result || null;
-};
-
-/**
- * Запись данных в кэш. Создает новую запись или атомарно обновляет существующую при конфликте ключей.
- * @param entry Объект кэша, соответствующий интерфейсу ICacheData.
- */
-export const setKey = (entry: ICacheData): void => {
-    const stmt = db.prepare(`
+    // Компилируем запросы один раз при инициализации
+    stmtGet = db.prepare('SELECT * FROM esi_cache WHERE key = ?');
+    stmtSet = db.prepare(`
     INSERT INTO esi_cache (key, etag, expires, data)
     VALUES (@key, @etag, @expires, @data)
     ON CONFLICT(key) DO UPDATE SET
@@ -66,60 +44,68 @@ export const setKey = (entry: ICacheData): void => {
       expires = excluded.expires,
       data = excluded.data
   `);
-    stmt.run(entry);
-};
+    stmtDelete = db.prepare('DELETE FROM esi_cache WHERE key = ?');
+    stmtPurge = db.prepare('DELETE FROM esi_cache WHERE expires < ?');
+}
+
+// Инициализируем БД и компилируем стейтменты
+initDb();
+
+/**
+ * Чтение записи из кэша.
+ * Оптимизировано: использует предварительно скомпилированный стейтмент.
+ */
+export function getByKey(key: string): ICacheData | null {
+    const result = stmtGet.get(key) as ICacheData | undefined;
+    return result || null;
+}
+
+/**
+ * Запись данных в кэш.
+ * Оптимизировано: мгновенное выполнение скомпилированного стейтмента.
+ */
+export function setKey(entry: ICacheData): void {
+    stmtSet.run(entry);
+}
 
 /**
  * Удаление конкретной записи из кэша по ключу.
- * @param key Строковый URL-адрес, который необходимо инвалидировать.
  */
-export const deleteKey = (key: string): void => {
-    const stmt = db.prepare('DELETE FROM esi_cache WHERE key = ?');
-    stmt.run(key);
-};
+export function deleteKey(key: string): void {
+    stmtDelete.run(key);
+}
 
 /**
- * Очистка всех просроченных записей из базы данных.
+ * Очистка всех просроченных записей.
  */
-export const purgeExpired = (): void => {
-    const stmt = db.prepare('DELETE FROM esi_cache WHERE expires < ?');
-    stmt.run(Date.now());
-};
+export function purgeExpired(): void {
+    stmtPurge.run(Date.now());
+}
 
 /**
- * Оптимизация размера файла базы данных (сжатие свободного места на диске).
+ * Оптимизация размера файла базы данных.
  */
-export const vacuumDb = (): void => {
+export function vacuumDb(): void {
     db.exec('VACUUM');
-};
+}
 
 /**
  * Полное удаление файлов базы данных с диска.
- * Перед удалением файлов принудительно закрывает удерживаемое соединение.
  */
-export const dropDb = (): void => {
+export function dropDb(): void {
     try {
-        // Освобождаем дескриптор файла в операционной системе, чтобы файлы можно было удалить
         db.close();
     } catch (error) {
-        // Игнорируем ошибку, если соединение уже было закрыто ранее
+        // Соединение уже закрыто
     }
 
-    // Список всех сопутствующих технических файлов SQLite в режиме WAL
     const filesToRemove = [dbPath, `${dbPath}-wal`, `${dbPath}-shm`];
 
-    filesToRemove.forEach((file) => {
-        try {
-            if (fs.existsSync(file)) {
-                fs.unlinkSync(file);
-            }
-        } catch (error) {
-            const err = error as Error;
-            console.error(
-                `Не удалось удалить файл базы данных ${file}:`,
-                err.message,
-            );
-        }
-    });
+    // Используем микрохелпер для атомарной очистки
+    const len = filesToRemove.length;
+    for (let i = 0; i < len; i++) {
+        safeUnlinkSync(filesToRemove[i]);
+    }
+
     console.log('db dropped');
-};
+}

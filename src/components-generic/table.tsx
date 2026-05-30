@@ -1,7 +1,7 @@
-// src/components-generic/table.tsx
+// ./src/components-generic/table.tsx
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import styles from './css/table.module.css';
 
 export interface ITableColumn<T> {
@@ -36,6 +36,27 @@ export default function Table<T>({
     const [selectedIds, setSelectedIds] = useState<T[keyof T][]>([]);
     const [lastClickedId, setLastClickedId] = useState<T[keyof T] | null>(null);
 
+    // Блокируем нативное выделение текста на уровне документа при зажатом Shift
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.shiftKey) {
+                document.body.style.userSelect = 'none';
+            }
+        };
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (!e.shiftKey) {
+                document.body.style.userSelect = '';
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            document.body.style.userSelect = '';
+        };
+    }, []);
+
     const handleSort = (column: ITableColumn<T>) => {
         if (!column.sortable || !column.sortPath) return;
 
@@ -60,10 +81,13 @@ export default function Table<T>({
             const aValue = a[sortPath];
             const bValue = b[sortPath];
 
+            if (aValue === bValue) return 0;
+
             if (typeof aValue === 'string' && typeof bValue === 'string') {
-                return sortDirection === 'asc'
-                    ? aValue.localeCompare(bValue)
-                    : bValue.localeCompare(aValue);
+                if (sortDirection === 'asc') {
+                    return aValue > bValue ? 1 : -1;
+                }
+                return aValue < bValue ? 1 : -1;
             }
 
             return sortDirection === 'asc'
@@ -78,6 +102,7 @@ export default function Table<T>({
     ) => {
         const currentId = currentItem[rowKey];
 
+        // 1. Клик с Ctrl (Windows Style: инвертировать выбор конкретной строки, сохраняя остальные)
         if (e.ctrlKey || e.metaKey) {
             setSelectedIds((prev) =>
                 prev.includes(currentId)
@@ -88,29 +113,40 @@ export default function Table<T>({
             return;
         }
 
+        // 2. Клик с Shift (Windows Style: выделить диапазон от опорной до текущей, СБРАСЫВАЯ старое выделение за пределами этого куска)
         if (e.shiftKey && lastClickedId !== null) {
-            const lastIndex = sortedItems.findIndex(
-                (item) => item[rowKey] === lastClickedId,
-            );
-            const currentIndex = sortedItems.findIndex(
-                (item) => item[rowKey] === currentId,
-            );
+            e.preventDefault();
+
+            const sortedLen = sortedItems.length;
+            let lastIndex = -1;
+            let currentIndex = -1;
+
+            for (let i = 0; i < sortedLen; i++) {
+                if (sortedItems[i][rowKey] === lastClickedId) lastIndex = i;
+                if (sortedItems[i][rowKey] === currentId) currentIndex = i;
+                if (lastIndex !== -1 && currentIndex !== -1) break;
+            }
 
             if (lastIndex !== -1 && currentIndex !== -1) {
-                const start = Math.min(lastIndex, currentIndex);
-                const end = Math.max(lastIndex, currentIndex);
+                const start =
+                    lastIndex < currentIndex ? lastIndex : currentIndex;
+                const end = lastIndex > currentIndex ? lastIndex : currentIndex;
 
-                const rangeIds = sortedItems
-                    .slice(start, end + 1)
-                    .map((item) => item[rowKey]);
-                setSelectedIds((prev) =>
-                    Array.from(new Set([...prev, ...rangeIds])),
-                );
-                setLastClickedId(currentId);
+                const rangeIdsLen = end - start + 1;
+                const rangeIds = new Array<T[keyof T]>(rangeIdsLen);
+                let idx = 0;
+
+                for (let i = start; i <= end; i++) {
+                    rangeIds[idx++] = sortedItems[i][rowKey];
+                }
+
+                // Строго по гайдлайнам Windows: Shift сбрасывает старое выделение, заменяя его новым диапазоном
+                setSelectedIds(rangeIds);
                 return;
             }
         }
 
+        // 3. Обычный клик (Windows Style: сбросить все и выделить только одну текущую строку)
         setSelectedIds([currentId]);
         setLastClickedId(currentId);
     };

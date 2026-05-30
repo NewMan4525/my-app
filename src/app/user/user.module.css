@@ -1,22 +1,36 @@
+/* ./src/app/user/user.module.css */
+
+/* Токены геометрии формы */
+:root {
+    --user-form-h2-size: 24px;
+    --user-form-h2-margin: 25px;
+    --user-form-padding-top: 10px;
+    --user-form-block-padding: 0 15%;
+}
+
 .container {
-  padding-top: 10px;
+    padding-top: var(--user-form-padding-top);
 }
 
 .h2 {
-  font-size: 24px;
-  text-align: center;
-  margin-bottom: 25px;
+    font-size: var(--user-form-h2-size);
+    text-align: center;
+    margin-bottom: var(--user-form-h2-margin);
 }
 
 .input_stat_block {
-  padding: 0 15%;
+    padding: var(--user-form-block-padding);
 }
+
 .input_stat_header {
+    /* Резерв под будущие модификации шрифта заголовков */
 }
-.description_input_wrapper > * {
-  display: block;
-}
+
 .description_input_wrapper {
-  display: flex;
-  justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
+}
+
+.description_input_wrapper > * {
+    display: block;
 }

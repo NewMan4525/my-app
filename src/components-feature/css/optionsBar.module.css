@@ -1,11 +1,20 @@
+/* ./src/app/components-feature/css/optionBar.module.css */
+
+/* Токены геометрии панели настроек рынка */
+:root {
+    --ob-padding-top: 10px;
+    --ob-h2-size: 24px;
+    --ob-h2-margin-bottom: 25px;
+}
+
 .container {
     position: relative;
-    padding-top: 10px;
+    padding-top: var(--ob-padding-top);
 }
 
 .h2 {
     position: relative;
-    font-size: 24px;
+    font-size: var(--ob-h2-size);
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: var(--ob-h2-margin-bottom);
 }
